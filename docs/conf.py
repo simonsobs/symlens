@@ -38,6 +38,8 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode','sphinx.ext.napoleon']
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
+autodoc_mock_imports = ["numpy","scipy","sympy","pixell"]
+
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
