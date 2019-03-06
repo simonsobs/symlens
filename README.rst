@@ -4,6 +4,24 @@
 symlens
 =======
 
+.. image:: https://img.shields.io/pypi/v/symlens.svg
+        :target: https://pypi.python.org/pypi/symlens
+
+.. image:: https://img.shields.io/travis/msyriac/symlens.svg
+        :target: https://travis-ci.org/msyriac/symlens
+
+.. image:: https://readthedocs.org/projects/symlens/badge/?version=latest
+        :target: https://symlens.readthedocs.io/en/latest/?badge=latest
+        :alt: Documentation Status
+
+
+.. image:: https://pyup.io/repos/github/msyriac/symlens/shield.svg
+     :target: https://pyup.io/repos/github/msyriac/symlens/
+     :alt: Updates
+
+
+
+
 This library allows one to build and evaluate arbitrary separable mode-coupling
 estimators. In practice, its main purpose is to provide a flat-sky lensing estimator
 code. More generally, one can build estimators and noise functions for
@@ -21,7 +39,7 @@ thoughts and ideas (and PRs!) are highly appreciated. Still, this package can
 serve as the backend for quick exploration of various kinds of estimators.
 
 * Free software: BSD license
-* Documentation: In progress
+* Documentation: https://symlens.readthedocs.io.
 
 Dependencies
 ============
