@@ -12,7 +12,7 @@ split-based lensing, birefringence, patchy tau, etc. and cross-covariances
 between these.
 
 Instead of having to calculate by hand the separable forms of the above, one
-simply provides the mode-coupling and filter expressions, and a `sympy`-based
+simply provides the mode-coupling and filter expressions, and a ``sympy``-based
 (Mathematica-like) backend factorizes these expressions into FFT-only form
 (i.e., no explicit convolutions are required).
 
@@ -45,7 +45,7 @@ Usage
 Basic usage
 -----------
 
-The most common use case for `symlens` is to get noise curves for lensing, and
+The most common use case for ``symlens`` is to get noise curves for lensing, and
 to run lensing reconstruction on CMB maps. We will cover this first, and later
 come to custom estimators that exploit the full power and flexibility of this
 package.
@@ -55,10 +55,10 @@ Geometry
 ~~~~~~~~
 
 Skip this if you are familiar with the pixell_ library. Most functions that
-return something immediately useful take a `shape,wcs` pair
+return something immediately useful take a ``shape``,``wcs`` pair
 as input. In short, this pair specifies the footprint or geometry of the patch of
 sky on which calculations are done. If you are playing with simulations or just
-want quick forecasts, you can make your own `shape,wcs` pair as follows:
+want quick forecasts, you can make your own ``shape``,``wcs`` pair as follows:
 
 .. code-block:: python
 		
@@ -91,7 +91,7 @@ Noise curves
 
 Using the machinery described in ``Custom estimators`` below, a number of
 pre-defined mode-coupling noise curves have been built. We provide some examples
-of using these. All of these require a `shape,wcs` geometry pair as described
+of using these. All of these require a ``shape``,``wcs`` geometry pair as described
 above. Next, you also need to have a Fourier space mask at hand
 that enforces what multipoles in the CMB map are included.
 
@@ -106,7 +106,7 @@ masks. e.g.
 	>>> kmask = utils.mask_kspace(shape,wcs,lmin=tellmin,lmax=tellmax)
 
 
-Finally, you also need a `feed_dict`, a dictionary which maps names of variables (keys) to
+Finally, you also need a ``feed_dict``, a dictionary which maps names of variables (keys) to
 2D arrays containing data, filters, etc. which are fed in at the very final
 integration step. With custom estimators described later, you get to choose the
 names of your variables. But the convenience of the canned functions described
@@ -114,11 +114,11 @@ here comes with the cost of having to learn what variable convention is defined
 inside them. We will learn by example.
 
 Lensing noise curves require CMB power spectra. The naming convention for the
-`feed_dict` for these is:
+``feed_dict`` for these is:
 
-1. `uC_X_Y` for CMB XY spectra that go in the lensing response function, e.g. `uC_T_T` for the unlensed TT spectrum
-2. `tC_X_Y` for total CMB XY spectra that go in the lensing
-   filters. e.g. `tC_T_T` for the total TT spectrum that includes beam-deconvolved noise.
+1. ``uC_X_Y`` for CMB XY spectra that go in the lensing response function, e.g. ``uC_T_T`` for the unlensed TT spectrum
+2. ``tC_X_Y`` for total CMB XY spectra that go in the lensing
+   filters. e.g. ``tC_T_T`` for the total TT spectrum that includes beam-deconvolved noise.
 
 These have to be specified on the 2D Fourier space grid. We can build them like
 this:
@@ -129,9 +129,9 @@ this:
     >>> feed_dict['uC_T_T'] = utils.interp(ells,ctt)(modlmap)
     >>> feed_dict['tC_T_T'] = utils.interp(ells,ctt)(modlmap)+(33.*np.pi/180./60.)**2./utils.gauss_beam(modlmap,7.0)**2.
 
-where I've used the convenience function `interp` to interpolate an `ells,cltt`
+where I've used the convenience function ``interp`` to interpolate an ``ells``,``cltt``
 1D spectrum specification isotropically on to the Fourier space grid, and
-created a Planck-like total beam-deconvolved spectrum using the `gauss_beam`
+created a Planck-like total beam-deconvolved spectrum using the ``gauss_beam``
 function. That's it! Now we can get the pre-built Hu Okamoto 2001
 (estimator="hu_ok") noise for the TT lensing estimator as follows,
 
@@ -181,7 +181,7 @@ General noise curves
 To perform more complicated calculations like cross-covariances, noise for
 non-optimal estimators, mixed experiment estimators (for gradient cleaning),
 split-based lensing N0 curves, etc., we need to learn how to attach field names,
-which make the `feed_dict` expect more variables than what was described
+which make the ``feed_dict`` expect more variables than what was described
 earlier.
 
 Let's first show how we can obtain a general noise cross-covariance. We can for
@@ -213,9 +213,9 @@ providing names for these fields.
 				field_names_beta=['E1','E2'])
 
 This modifies the total power spectra variable names that feed_dict expects. The
-above command will not work unless `tC_E1_T_E1_T`, `tC_E2_T_E2_T`,
-`tC_E1_T_E2_T`, `tC_E2_T_E1_T` are also provided, instead of just the usual
-`tC_T_T`. Specifying these in feed_dict allows one to generalize to a wider
+above command will not work unless ``tC_E1_T_E1_T``, ``tC_E2_T_E2_T``,
+``tC_E1_T_E2_T``, ``tC_E2_T_E1_T`` are also provided, instead of just the usual
+``tC_T_T``. Specifying these in feed_dict allows one to generalize to a wider
 variety of estimators.
 
 Other built-in estimators
@@ -257,14 +257,28 @@ We can build general factorizable quadratic estimators as follows.
 We need to specify the mode coupling form (little f):
 
 .. math::
-   f(l_1,l_2)
+   f(\vec{l}_1,\vec{l}_2)
 
 and specify the filter form (big F):
 
 .. math::
-   F(l_1,l_2)
+   F(\vec{l}_1,\vec{l}_2)
 
-These must be specified in terms of the following special symbols:
+For reference, these are related to the quadratic estimator,
+
+.. math::
+   \hat{q}(\vec{L}) = \frac{A(\vec{L})}{2} \int \frac{d^2\vec{l}_1}{(2\pi)^2} F(l_1,l_2) X(l_1) Y(l_2)
+
+and normalization,
+
+.. math::
+   A(\vec{L}) = L^2 \left[\int \frac{d^2\vec{l}_1}{(2\pi)^2} F(l_1,l_2)
+   f(l_1,l_2)\right]^{-1}
+
+where :math:`\vec{L}=\vec{l}_1 + \vec{l}_2`.
+
+   
+The expressions :math:`f(\vec{l}_1,\vec{l}_2)` and :math:`F(\vec{l}_1,\vec{l}_2)` must be specified in terms of the following special symbols:
 
 1. Ldl1 for :math:`\vec{L}.\vec{l_1}`
 2. Ldl2 for :math:`\vec{L}.\vec{l_2}`
@@ -272,9 +286,9 @@ These must be specified in terms of the following special symbols:
 4. sin2t12 for :math:`\mathrm{sin}(2\theta_{12})`
 5. L for :math:`|\vec{L}|`
    
-and any other arbitrary symbols which will be replaced with data later on.
+and any other arbitrary symbols which will be replaced with numerical data later on.
 
-The special symbols can be accessed as follows:
+The special symbols can be accessed directly from the module, e.g.:
 
 .. code-block:: python
 		
@@ -284,7 +298,8 @@ The special symbols can be accessed as follows:
 	>>> s.cost2t12
 
 
-and arbitrary symbols can be defined either as functions of l1 or of l2:
+and arbitrary symbols can be defined either as functions of l1 or of l2, using a
+wrapper in the module:
 
 
 .. code-block:: python
@@ -308,7 +323,7 @@ follows,
    >>> F = f / 2 / s.e('tC_T_T_l1') / s.e('tC_T_T_l2')
    >>> expr1 = f * F # this is the integrand
 
-We then provide data arrays for use after factorization in feed_dict. These are lensed TT spectra interpolated on to 2D Fourier space.
+We then provide data arrays for use after factorization in ``feed_dict``. These are lensed TT spectra interpolated on to 2D Fourier space.
 
 .. code-block:: python
 				
