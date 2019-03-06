@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/msyriac/symlens
+    $ git clone git://github.com/simonsobs/symlens
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/msyriac/symlens/tarball/master
+    $ curl  -OL https://github.com/simonsobs/symlens/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/msyriac/symlens
-.. _tarball: https://github.com/msyriac/symlens/tarball/master
+.. _Github repo: https://github.com/simonsobs/symlens
+.. _tarball: https://github.com/simonsobs/symlens/tarball/master

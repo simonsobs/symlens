@@ -7,17 +7,12 @@ symlens
 .. image:: https://img.shields.io/pypi/v/symlens.svg
         :target: https://pypi.python.org/pypi/symlens
 
-.. image:: https://img.shields.io/travis/msyriac/symlens.svg
-        :target: https://travis-ci.org/msyriac/symlens
+.. image:: https://img.shields.io/travis/simonsobs/symlens.svg
+        :target: https://travis-ci.org/simonsobs/symlens
 
 .. image:: https://readthedocs.org/projects/symlens/badge/?version=latest
         :target: https://symlens.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
-
-
-.. image:: https://pyup.io/repos/github/msyriac/symlens/shield.svg
-     :target: https://pyup.io/repos/github/msyriac/symlens/
-     :alt: Updates
 
 
 
