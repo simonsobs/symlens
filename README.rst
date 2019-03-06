@@ -27,7 +27,7 @@ Dependencies
 ============
 
 * Python>=2.7 or Python>=3.4
-* pixell
+* pixell_
 * numpy, sympy
 
 Installing
@@ -54,7 +54,7 @@ package.
 Geometry
 ~~~~~~~~
 
-Skip this if you are familiar with the pixell library. Most functions that
+Skip this if you are familiar with the pixell_ library. Most functions that
 return something immediately useful take a `shape,wcs` pair
 as input. In short, this pair specifies the footprint or geometry of the patch of
 sky on which calculations are done. If you are playing with simulations or just
@@ -84,7 +84,7 @@ To read a map in from disk and get its geometry, you could do
    >>> imap = enmap.read_map(fits_file_name)
    >>> shape,wcs = imap.shape, imap.wcs
 
-Please read the documentation for pixell for more information.
+Please read the documentation for pixell_ for more information.
 
 Noise curves
 ~~~~~~~~~~~~
@@ -342,3 +342,6 @@ If you have write access to this repository, please:
 4. submit a pull request on github
 
 If you do not have write access, create a fork of this repository and proceed as described above. 
+
+.. _pixell: https://github.com/simonsobs/pixell/
+
