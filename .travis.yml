@@ -43,3 +43,6 @@ deploy:
     repo: msyriac/symlens
     python: 3.6
 
+addons:
+  apt_packages:
+  - gfortran
