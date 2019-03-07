@@ -15,10 +15,8 @@ deploy:
   on:
     tags: true
     repo: msyriac/symlens
-    python: 3.6
+    python: "3.6_with_system_site_packages"
 
-virtualenv:
-  system_site_packages: true
-  
 before_install:
- - sudo apt-get install -qq python-numpy
+  - sudo apt-get update
+  - sudo apt-get install python-numpy
