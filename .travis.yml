@@ -30,7 +30,7 @@ install:
   - python setup.py develop
 
 script:
-- py.test --cov=symlens tests/
+- py.test --cov=symlens tests/ -m webtest
 
 deploy:
   provider: pypi

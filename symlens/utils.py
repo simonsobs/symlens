@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from pixell import enmap
+from pixell import enmap,utils
 
 def mask_kspace(shape,wcs, lxcut = None, lycut = None, lmin = None, lmax = None):
     """Produce a Fourier space mask.
@@ -148,3 +148,46 @@ def gauss_beam(ells,fwhm):
     """
     tht_fwhm = np.deg2rad(fwhm / 60.)
     return np.exp(-(tht_fwhm**2.)*(ells**2.) / (16.*np.log(2.)))
+
+
+class bin2D(object):
+    def __init__(self, modrmap, bin_edges):
+        self.centers = (bin_edges[1:]+bin_edges[:-1])/2.
+        self.digitized = np.digitize(np.ndarray.flatten(modrmap), bin_edges,right=True)
+        self.bin_edges = bin_edges
+    def bin(self,data2d,weights=None):
+        
+        if weights is None:
+            res = np.bincount(self.digitized,(data2d).reshape(-1))[1:-1]/np.bincount(self.digitized)[1:-1]
+        else:
+            res = np.bincount(self.digitized,(data2d*weights).reshape(-1))[1:-1]/np.bincount(self.digitized,weights.reshape(-1))[1:-1]
+        return self.centers,res
+
+def rect_geometry(width_arcmin=None,width_deg=None,px_res_arcmin=0.5,proj="car",pol=False,height_deg=None,height_arcmin=None,xoffset_degree=0.,yoffset_degree=0.,extra=False,**kwargs):
+    """
+    Get shape and wcs for a rectangular patch of specified size and coordinate center
+    """
+
+    if width_deg is not None:
+        width_arcmin = 60.*width_deg
+    if height_deg is not None:
+        height_arcmin = 60.*height_deg
+    
+    hwidth = width_arcmin/2.
+    if height_arcmin is None:
+        vwidth = hwidth
+    else:
+        vwidth = height_arcmin/2.
+    arcmin =  utils.arcmin
+    degree =  utils.degree
+    pos = [[-vwidth*arcmin+yoffset_degree*degree,-hwidth*arcmin+xoffset_degree*degree],[vwidth*arcmin+yoffset_degree*degree,hwidth*arcmin+xoffset_degree*degree]]
+    shape, wcs = enmap.geometry(pos=pos, res=px_res_arcmin*arcmin, proj=proj,**kwargs)
+    if pol: shape = (3,)+shape
+    if extra:
+        modlmap = enmap.modlmap(shape,wcs)
+        lmax = modlmap.max()
+        ells = np.arange(0,lmax,1.)
+        return shape,wcs,modlmap,ells
+    else:
+        return shape, wcs
+    

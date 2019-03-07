@@ -3,12 +3,10 @@ from pixell import enmap, utils as putils, powspec
 import os,sys
 from scipy.interpolate import interp1d
 import numpy as np
-from orphics import maps,lensing,stats,io,cosmology
-from enlib import bench
-from symlens import utils
 
 
 def test_hdv_huok_planck():
+    from orphics import lensing,io,cosmology,maps
 
     shape,wcs = enmap.geometry(shape=(512,512),res=2.0*putils.arcmin,pos=(0,0))
     modlmap = enmap.modlmap(shape,wcs)
@@ -30,7 +28,7 @@ def test_hdv_huok_planck():
     integral = s.integrate(shape,wcs,feed_dict,expr1,xmask=xmask,ymask=xmask).real
     Nl = modlmap**4./integral/4.
     bin_edges = np.arange(10,3000,40)
-    binner = stats.bin2D(modlmap,bin_edges)
+    binner = s.bin2D(modlmap,bin_edges)
     cents,nl1d = binner.bin(Nl)
     
 
@@ -63,6 +61,8 @@ def test_hdv_huok_planck():
     
 
 def test_lens_recon():
+    from orphics import lensing,io,cosmology,maps
+    from enlib import bench
 
     deg = 10.
     px = 2.0
@@ -76,28 +76,30 @@ def test_lens_recon():
     noise_uk_arcmin = 0.01
     
     theory = cosmology.default_theory(lpad=30000)
-    shape,wcs = maps.rect_geometry(width_deg=deg,px_res_arcmin=px)
+    shape,wcs = s.rect_geometry(width_deg=deg,px_res_arcmin=px)
     flsims = lensing.FlatLensingSims(shape,wcs,theory,beam_arcmin,noise_uk_arcmin)
     kbeam = flsims.kbeam
     modlmap = enmap.modlmap(shape,wcs)
     fc = maps.FourierCalc(shape,wcs)
     n2d = (noise_uk_arcmin*np.pi/180./60.)**2./flsims.kbeam**2.
-    tmask = maps.mask_kspace(shape,wcs,lmin=tellmin,lmax=tellmax)
-    kmask = maps.mask_kspace(shape,wcs,lmin=kellmin,lmax=kellmax)
+    tmask = s.mask_kspace(shape,wcs,lmin=tellmin,lmax=tellmax)
+    kmask = s.mask_kspace(shape,wcs,lmin=kellmin,lmax=kellmax)
     with bench.show("orphics init"):
         qest = lensing.qest(shape,wcs,theory,
                             noise2d=n2d,kmask=tmask,kmask_K=kmask,
                             pol=False,grad_cut=grad_cut,
                             unlensed_equals_lensed=True,bigell=30000)
     bin_edges = np.arange(kellmin,kellmax,bin_width)
-    binner = stats.bin2D(modlmap,bin_edges)
+    binner = s.bin2D(modlmap,bin_edges)
     i = 0
     unlensed,kappa,lensed,beamed,noise_map,observed = flsims.get_sim(seed_cmb=(i,1),
                                                                      seed_kappa=(i,2),
                                                                      seed_noise=(i,3),
                                                                      lens_order=5,
                                                                      return_intermediate=True)
-    _,kmap,_ = fc.power2d(observed)
+
+    kmap = enmap.fft(observed,normalize="phys")
+    # _,kmap,_ = fc.power2d(observed)
     with bench.show("orphics"):
         kkappa = qest.kappa_from_map("TT",kmap/kbeam,alreadyFTed=True,returnFt=True)    
     pir2d,kinput = fc.f1power(kappa,kkappa)
@@ -137,6 +139,7 @@ def test_lens_recon():
     pl.done("ncomp.png")
 
 def test_shear():
+    from orphics import lensing,io,cosmology,maps
 
     deg = 20.
     px = 2.0
@@ -149,16 +152,16 @@ def test_shear():
     noise_uk_arcmin = 7.0
     
     theory = cosmology.default_theory(lpad=30000)
-    shape,wcs = maps.rect_geometry(width_deg=deg,px_res_arcmin=px)
+    shape,wcs = s.rect_geometry(width_deg=deg,px_res_arcmin=px)
     flsims = lensing.FlatLensingSims(shape,wcs,theory,beam_arcmin,noise_uk_arcmin)
     kbeam = flsims.kbeam
     modlmap = enmap.modlmap(shape,wcs)
     fc = maps.FourierCalc(shape,wcs)
     n2d = (noise_uk_arcmin*np.pi/180./60.)**2./flsims.kbeam**2.
-    tmask = maps.mask_kspace(shape,wcs,lmin=tellmin,lmax=tellmax)
-    kmask = maps.mask_kspace(shape,wcs,lmin=kellmin,lmax=kellmax)
+    tmask = s.mask_kspace(shape,wcs,lmin=tellmin,lmax=tellmax)
+    kmask = s.mask_kspace(shape,wcs,lmin=kellmin,lmax=kellmax)
     bin_edges = np.arange(kellmin,kellmax,bin_width)
-    binner = stats.bin2D(modlmap,bin_edges)
+    binner = s.bin2D(modlmap,bin_edges)
     i = 0
     unlensed,kappa,lensed,beamed,noise_map,observed = flsims.get_sim(seed_cmb=(i,1),
                                                                      seed_kappa=(i,2),
@@ -203,6 +206,7 @@ def test_shear():
     pl.done("ncomp.png")
     
 def test_pol():
+    from orphics import lensing,io,cosmology,maps
 
     est = "hu_ok"
     pols = ['TT','EE','TE','EB','TB']
@@ -223,15 +227,15 @@ def test_pol():
     noise_uk_arcmin = 10.0
     
     theory = cosmology.default_theory(lpad=30000)
-    shape,wcs = maps.rect_geometry(width_deg=deg,px_res_arcmin=px)
+    shape,wcs = s.rect_geometry(width_deg=deg,px_res_arcmin=px)
     modlmap = enmap.modlmap(shape,wcs)
-    kbeam = utils.gauss_beam(modlmap,beam_arcmin)
+    kbeam = s.gauss_beam(modlmap,beam_arcmin)
     n2d = (noise_uk_arcmin*np.pi/180./60.)**2./kbeam**2.
-    tmask = maps.mask_kspace(shape,wcs,lmin=tellmin,lmax=tellmax)
-    pmask = maps.mask_kspace(shape,wcs,lmin=pellmin,lmax=pellmax)
-    kmask = maps.mask_kspace(shape,wcs,lmin=kellmin,lmax=kellmax)
+    tmask = s.mask_kspace(shape,wcs,lmin=tellmin,lmax=tellmax)
+    pmask = s.mask_kspace(shape,wcs,lmin=pellmin,lmax=pellmax)
+    kmask = s.mask_kspace(shape,wcs,lmin=kellmin,lmax=kellmax)
     bin_edges = np.arange(kellmin,kellmax,bin_width)
-    binner = stats.bin2D(modlmap,bin_edges)
+    binner = s.bin2D(modlmap,bin_edges)
     
     feed_dict = {}
     cltt = theory.lCl('TT',modlmap)
@@ -260,7 +264,3 @@ def test_pol():
     pl.done("nls.png")
     
     
-#test_hdv_huok_planck()
-#test_lens_recon()    
-#test_shear()
-#test_pol()
