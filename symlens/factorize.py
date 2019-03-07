@@ -22,7 +22,8 @@ Ly = Symbol('Ly')
 L = Symbol('L')
 Ldl1 = (Lx*l1x+Ly*l1y)
 Ldl2 = (Lx*l2x+Ly*l2y)
-l1dl2 = (l1x*l2x+l2x*l2y)
+Lxl1 = (Ly*l1x-Lx*l1y)
+Lxl1 = (Ly*l2x-Lx*l2y)
 
 # More built-in special symbols
 cos2t12,sin2t12 = _helpers.substitute_trig(l1x,l1y,l2x,l2y,l1,l2)

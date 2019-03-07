@@ -4,7 +4,7 @@ from sympy import Symbol,Function
 import sympy
 from pixell import fft as efft, enmap
 import os,sys
-from .factorize import Ldl1,Ldl2,l1,l2,cos2t12,sin2t12,l1dl2,l1x,l2x,l1y,l2y,e,L,Lx,Ly,integrate
+from .factorize import Ldl1,Ldl2,l1,l2,cos2t12,sin2t12,l1x,l2x,l1y,l2y,e,L,Lx,Ly,Lxl1,Lxl2,integrate
 
 def _cross_names(x,y,fn1,fn2):
     if fn1 is None: e1 = ""
@@ -889,7 +889,7 @@ def du2(ab):
     return e('duC_%s_%s_l2' % (a,b))
 
 
-def lensing_response_f(XY,rev=False):
+def lensing_response_f(XY,rev=False,curl=False):
 
     """
     Returns the mode-coupling response f(l1,l2) for CMB lensing.
@@ -912,10 +912,11 @@ def lensing_response_f(XY,rev=False):
 
     """
     
-
+    cLdl1 = Lxl1 if curl else Ldl1
+    cLdl2 = Lxl2 if curl else Ldl2
     
-    iLdl1 = Ldl2 if rev else Ldl1
-    iLdl2 = Ldl1 if rev else Ldl2
+    iLdl1 = cLdl2 if rev else cLdl1
+    iLdl2 = cLdl1 if rev else cLdl2
     def iu1(ab): return u2(ab) if rev else u1(ab)
     def iu2(ab): return u1(ab) if rev else u2(ab)
     if XY=='TT':
@@ -984,11 +985,15 @@ def get_mc_expressions(estimator,XY,field_names=None):
         a,b = ab
         return e(_cross_names(a,b,f1,f2)+"_l2")
     
-    
-    if estimator=='hu_ok' or estimator=='hdv': # Hu, Okamoto 2001 # Hu, DeDeo, Vale 2007
-        f = lensing_response_f(XY,rev=False)
-        if estimator=='hu_ok':
-            fr = lensing_response_f(XY,rev=True)
+    hus = ['hu_ok_curl','hdv_curl','hu_ok','hdv']
+    curls = ['hu_ok_curl','hdv_curl']
+    curl = estimator in curls
+    cLdl1 = Lxl1 if curl else Ldl1
+    cLdl2 = Lxl2 if curl else Ldl2
+    if estimator in hus: # Hu, Okamoto 2001 # Hu, DeDeo, Vale 2007
+        f = lensing_response_f(XY,rev=False,curl=curl)
+        if estimator in ['hu_ok','hu_ok_curl']:
+            fr = lensing_response_f(XY,rev=True,curl=curl)
             if XY in ['TT','EE']:
                 F = f / 2 / t1(XY) / t2(XY)
                 Fr = fr / 2 / t2(XY) / t1(XY)
@@ -1002,8 +1007,8 @@ def get_mc_expressions(estimator,XY,field_names=None):
                 F = (t1('EE')*t2('TT')*f - t1('TE')*t2('TE')*fr)/(t1('TT')*t2('EE')*t1('EE')*t2('TT'))
                 Fr = (t2('EE')*t1('TT')*fr - t2('TE')*t1('TE')*f)/(t2('TT')*t1('EE')*t2('EE')*t1('TT'))
         elif estimator=='hdv':
-            Fp = Ldl1/t1(X+X)/t2(Y+Y)
-            Fpr = Ldl2/t2(X+X)/t1(Y+Y)
+            Fp = cLdl1/t1(X+X)/t2(Y+Y)
+            Fpr = cLdl2/t2(X+X)/t1(Y+Y)
             if Y=='T':
                 F = Fp * u1(X+Y)
                 Fr = Fpr * u2(X+Y)
@@ -1016,10 +1021,10 @@ def get_mc_expressions(estimator,XY,field_names=None):
             
     elif estimator=='shear': # Schaan, Ferraro 2018
         assert XY=="TT", "Shear estimator only implemented for TT."
-        f = Ldl2*u2('TT')
-        fr = Ldl1*u1('TT')
-        cos2theta = ((2*(Ldl1)**2)/L**2/l1**2) - 1
-        cos2theta_rev = ((2*(Ldl2)**2)/L**2/l2**2) - 1
+        f = cLdl2*u2('TT')
+        fr = cLdl1*u1('TT')
+        cos2theta = ((2*(cLdl1)**2)/L**2/l1**2) - 1
+        cos2theta_rev = ((2*(cLdl2)**2)/L**2/l2**2) - 1
         F = cos2theta * u1('TT') * du1('TT')/2/t1('TT')/t1('TT') 
         Fr = cos2theta_rev * u2('TT') * du2('TT')/2/t2('TT')/t2('TT')  
 
