@@ -11,21 +11,22 @@ Routines to reduce and evaluate symbolic mode coupling integrals
 """
 
 # Built-in special symbols
-l1x = Symbol('l1x')
-l1y = Symbol('l1y')
-l2x = Symbol('l2x')
-l2y = Symbol('l2y')
-l1 = Symbol('l1')
-l2 = Symbol('l2')
-Lx = Symbol('Lx')
-Ly = Symbol('Ly')
-L = Symbol('L')
-Ldl1 = (Lx*l1x+Ly*l1y)
-Ldl2 = (Lx*l2x+Ly*l2y)
-Lxl1 = (Ly*l1x-Lx*l1y)
-Lxl2 = (Ly*l2x-Lx*l2y)
+l1x = Symbol('l1x') # \vec{l}_1x
+l1y = Symbol('l1y') # \vec{l}_1y
+l2x = Symbol('l2x') # \vec{l}_2x
+l2y = Symbol('l2y') # \vec{l}_2y
+l1 = Symbol('l1') # |\vec{l}_1|
+l2 = Symbol('l2') # |\vec{l}_2|
+Lx = Symbol('Lx') # \vec{L}_x
+Ly = Symbol('Ly') # \vec{L}_y
+L = Symbol('L') # |\vec{L}|
+Ldl1 = (Lx*l1x+Ly*l1y) # \vec{L}.\vec{l}_1
+Ldl2 = (Lx*l2x+Ly*l2y) # \vec{L}.\vec{l}_2
+Lxl1 = (Ly*l1x-Lx*l1y) # \vec{L} x \vec{l}_1 for curl
+Lxl2 = (Ly*l2x-Lx*l2y) # \vec{L} x \vec{l}_2 for curl
 
 # More built-in special symbols
+# cos(2\theta_{12}), sin(2\theta_{12}) for polarization
 cos2t12,sin2t12 = _helpers.substitute_trig(l1x,l1y,l2x,l2y,l1,l2)
 
 # Custom symbol wrapper
