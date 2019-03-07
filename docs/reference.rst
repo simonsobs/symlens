@@ -4,10 +4,10 @@
 API Reference
 =============
 
-.. sectnum:: :start: 2
+.. sectnum:: :start: 3
 
 
-See :ref:`Usage` for how to use these functions for common map manipulation tasks.
+See :ref:`Usage` for how to use these functions for common tasks.
 
 qe -- Quadratic Estimators
 ==========================

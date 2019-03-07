@@ -151,11 +151,13 @@ def cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
     """
     Calculates the integral
 
-    \int d2l1/(2pi)^2 Falpha(l1,l2) (Fbeta(l1,l2)* tC_ac_l1 *tC_bd_l2+ Fbeta(l2,l1)*tC_ad_l1*tC_bc_l2)
+    .. math::
+        \\int \\frac{d^2 \\vec{l}_1 }{ (2\\pi)^2 }  F_{\\alpha}(\\vec{l}_1,\\vec{l}_2) (F_{\\beta}(\\vec{l}_1,\\vec{l}_2) C^{ac}_{l_1} C^{bd}_{l_2}+ F_{\\beta}(\\vec{l}_2,\\vec{l}_1) C^{ad}_{l_1} C^{bc}_{l_2})
 
     where
     alpha_XY = "ab"
     beta_XY = "cd"
+
 
     Parameters
     ----------

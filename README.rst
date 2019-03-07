@@ -55,7 +55,7 @@ To install, run:
 Usage
 =====
 
-See the :ref:`Usage` guide and the :ref:`_ReferencePage`.
+See the Usage_ guide and the API Reference_.
 
 Contributing
 ------------
@@ -70,4 +70,5 @@ If you have write access to this repository, please:
 If you do not have write access, create a fork of this repository and proceed as described above. 
 
 .. _pixell: https://github.com/simonsobs/pixell/
-
+.. _Usage: https://symlens.readthedocs.io/en/latest/usage.html
+.. _Reference: https://symlens.readthedocs.io/en/latest/usage.html

@@ -3,6 +3,7 @@
 =====
 Usage
 =====
+.. sectnum:: :start: 2
 
 
 Basic usage
