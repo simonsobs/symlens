@@ -40,6 +40,7 @@ templates_path = ['_templates']
 
 autodoc_mock_imports = ["numpy","scipy","sympy","pixell"]
 
+
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #

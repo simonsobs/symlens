@@ -4,5 +4,8 @@ __author__ = """Mathew Madhavacheril"""
 __email__ = 'mathewsyriac@gmail.com'
 __version__ = '0.1.0'
 
-try: from .core import *
+try:
+    from .factorize import *
+    from .qe import *
+    from .utils import *
 except: pass
