@@ -71,4 +71,4 @@ If you do not have write access, create a fork of this repository and proceed as
 
 .. _pixell: https://github.com/simonsobs/pixell/
 .. _Usage: https://symlens.readthedocs.io/en/latest/usage.html
-.. _Reference: https://symlens.readthedocs.io/en/latest/usage.html
+.. _Reference: https://symlens.readthedocs.io/en/latest/reference.html
