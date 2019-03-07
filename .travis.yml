@@ -1,9 +1,9 @@
 language: python
 python:
-- 3.6
-- 3.5
-- 3.4
-- 2.7
+- "3.6_with_system_site_packages"
+- "3.5_with_system_site_packages"
+- "3.4_with_system_site_packages"
+- "2.7_with_system_site_packages"
 install: pip install -U tox-travis
 script: tox
 deploy:
@@ -15,7 +15,7 @@ deploy:
   on:
     tags: true
     repo: msyriac/symlens
-    python: "3.6_with_system_site_packages"
+    python: 3.6
 
 before_install:
   - python -m pip install numpy
