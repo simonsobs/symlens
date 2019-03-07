@@ -39,7 +39,7 @@ deploy:
     secure: ePiaFLmgsquKa+jL51apTsofEKiZoGPKG+vaa/K+j+FW25karfBcAcSDvGb6ZA3up0au2GKbarX0NYs67PFkdlXowhB1jC3Vy7xN5AC61ZqZamvZW9kdnN+SUzJlcvm9LduGzI66hoj7INLtLnEL6sICcKYh8KF6CqpHoaLuKWVekc97uyXLhQKjMJEisfP54/R7yXJD/qLjM2oNnRpHYw8GOywk4FljXKxTbZQvo3a6ABpTFYbN1o5Q1VU4yRgDD2tliN1D2vn8w0hU+zykzkTgXk5LpQIR3AqTOXK84IqyL43MxHSfaSdysGveHyXsOdhJSDUXXpb7OaCyLbx4niDb+w05f5uzrOgq4GtGUgQqA/ykNSc6tbnpHqtOtOezfZCm6f9Z90hU1IklNyjzIfZOMbserVVDPa5u33RKYCpaXFasLnV4xYoNllD+ERBF1rIVlEs2+E7ngojs/gdxpNGL5WD2M+Mkx3OSNdUhMNhXMg7+QR1fcbFPsHIJDTITedtEQPtC+kDBQR/C6enRrMiApX+dT49FkHhNzCo5s4el77eHIg3gHP0pEccLCont5RDvAQFbZQYkQyevo/cF0zcR6T3Ey+Y0AJYEKMgjKmffpRttBMki+Or9+vCyS+RoXCmTkkNqM+nfxuDLxehpBQnfVXYfiu/UKRSunCL57YU=
   on:
     tags: true
-    repo: msyriac/symlens
+    repo: simonsobs/symlens
     python: 3.6
 
 addons:
