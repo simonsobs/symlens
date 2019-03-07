@@ -11,9 +11,12 @@ Only tests marked @pytest.mark.webtest
 will be run on Travis
 """
 
+@pytest.mark.webtest
+def test_trivial():
+    assert 1==1
 
-# The following tests need orphics
 
+# The following tests need orphics, and so are not meant to be run on Travis
 def test_hdv_huok_planck():
     from orphics import lensing,io,cosmology,maps
 
