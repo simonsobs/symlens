@@ -18,5 +18,4 @@ deploy:
     python: "3.6_with_system_site_packages"
 
 before_install:
-  - sudo apt-get update
-  - sudo apt-get install python-numpy
+  - python -m pip install numpy
