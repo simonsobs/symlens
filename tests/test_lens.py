@@ -1,5 +1,5 @@
 import symlens as s
-from pixell import enmap, utils, powspec
+from pixell import enmap, utils as putils, powspec
 import os,sys
 from scipy.interpolate import interp1d
 import numpy as np
@@ -10,7 +10,7 @@ from symlens import utils
 
 def test_hdv_huok_planck():
 
-    shape,wcs = enmap.geometry(shape=(2048,2048),res=2.0*utils.arcmin,pos=(0,0))
+    shape,wcs = enmap.geometry(shape=(512,512),res=2.0*putils.arcmin,pos=(0,0))
     modlmap = enmap.modlmap(shape,wcs)
     theory = cosmology.default_theory()
     ells = np.arange(0,3000,1)
@@ -59,12 +59,12 @@ def test_hdv_huok_planck():
     pl.add(cents,nl1d5)
     pl.add(cents,nl1d6)
     pl.add(ells,clkk)
-    pl.done()
+    pl.done("plcomp.png")
     
 
 def test_lens_recon():
 
-    deg = 50.
+    deg = 10.
     px = 2.0
     tellmin = 100
     tellmax = 3000
@@ -109,55 +109,36 @@ def test_lens_recon():
 
     feed_dict = {}
     cltt = theory.lCl('TT',modlmap)
-    feed_dict['uC_T_T'] = theory.uCl('TT',modlmap)
+    feed_dict['uC_T_T'] = theory.lCl('TT',modlmap)
     feed_dict['tC_T_T'] = cltt+n2d
     feed_dict['X'] = kmap/kbeam
     feed_dict['Y'] = kmap/kbeam
 
     with bench.show("symlens init"):
         Al = s.A_l(shape,wcs,feed_dict,"hdv","TT",xmask=tmask,ymask=tmask)
-    Nl = s.N_l_from_A_l(shape,wcs,Al)
+    Nl = s.N_l_from_A_l_optimal(shape,wcs,Al)
     with bench.show("symlens"):
         ukappa = s.unnormalized_quadratic_estimator(shape,wcs,feed_dict,"hdv","TT",xmask=tmask,ymask=tmask)
     nkappa = Al * ukappa
-
-    ells = np.arange(0,10000,1)
-    ucltt = theory.uCl('TT',ells)
-    feed_dict['duC_T_T'] = s.interp(ells,np.gradient(np.log(ucltt),np.log(ells)))(modlmap)
-    # io.plot_img(np.fft.fftshift(np.arcsinh(feed_dict['duC_T_T'])))
-    sAl = s.A_l(shape,wcs,feed_dict,"shear","TT",xmask=tmask,ymask=tmask)
-    sNl = s.N_l(shape,wcs,feed_dict,"shear","TT",xmask=tmask,ymask=tmask)
-    sNl2 = s.N_l_from_A_l(shape,wcs,sAl)
-    sukappa = s.unnormalized_quadratic_estimator(shape,wcs,feed_dict,"shear","TT",xmask=tmask,ymask=tmask)
-    snkappa = sAl * sukappa
-    
 
     pir2d2 = fc.f2power(nkappa,kinput)
     cents,pir1d2 = binner.bin(pir2d2)
 
 
-    pir2d3 = fc.f2power(snkappa,kinput)
-    cents,pir1d3 = binner.bin(pir2d3)
-    
     cents,Nlkk = binner.bin(qest.N.Nlkk['TT'])
     cents,Nlkk2 = binner.bin(Nl)
-    cents,Nlkk3 = binner.bin(sNl)
-    cents,Nlkk4 = binner.bin(sNl2)
 
     pl = io.Plotter(xyscale='linlog')
     pl.add(cents,pii1d,color='k',lw=3)
     pl.add(cents,pir1d,label='orphics')
     pl.add(cents,pir1d2,label='hdv symlens')
-    pl.add(cents,pir1d3,label='shear')
-    pl.add(cents,Nlkk,ls="--")
-    pl.add(cents,Nlkk2,ls="-.")
-    pl.add(cents,Nlkk3,ls=":")
-    pl.add(cents,Nlkk4,ls=":")
+    pl.add(cents,Nlkk,ls="--",label='orphics')
+    pl.add(cents,Nlkk2,ls="-.",label='symlens')
     pl.done("ncomp.png")
 
 def test_shear():
 
-    deg = 50.
+    deg = 20.
     px = 2.0
     tellmin = 30
     tellmax = 3500
@@ -282,4 +263,4 @@ def test_pol():
 #test_hdv_huok_planck()
 #test_lens_recon()    
 #test_shear()
-test_pol()
+#test_pol()

@@ -4,6 +4,7 @@ from sympy import Symbol,Function
 import sympy
 from pixell import fft as efft, enmap
 import os,sys
+from .factorize import Ldl1,Ldl2,l1,l2,cos2t12,sin2t12,l1dl2,l1x,l2x,l1y,l2y,e,L,Lx,Ly,integrate
 
 def _cross_names(x,y,fn1,fn2):
     if fn1 is None: e1 = ""
@@ -542,7 +543,7 @@ def A_l(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None)
 
 def N_l_from_A_l_optimal(shape,wcs,Al):
     modlmap = enmap.modlmap(shape,wcs)
-    return A_l * modlmap**2./4.    
+    return Al * modlmap**2./4.    
 
 def N_l_optimal(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None):
     """
