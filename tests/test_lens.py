@@ -3,7 +3,16 @@ from pixell import enmap, utils as putils, powspec
 import os,sys
 from scipy.interpolate import interp1d
 import numpy as np
+import pytest
 
+
+"""
+Only tests marked @pytest.mark.webtest
+will be run on Travis
+"""
+
+
+# The following tests need orphics
 
 def test_hdv_huok_planck():
     from orphics import lensing,io,cosmology,maps

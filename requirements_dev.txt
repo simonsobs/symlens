@@ -10,6 +10,7 @@ twine==1.12.1
 
 pytest==3.8.2
 pytest-runner==4.2
+pytest-cov>=2.6
 
 numpy>=1.13
 scipy>=1.0
