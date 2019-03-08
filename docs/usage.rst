@@ -80,7 +80,9 @@ inside them. We will learn by example.
 Lensing noise curves require CMB power spectra. The naming convention for the
 ``feed_dict`` for these is:
 
-1. ``uC_X_Y`` for CMB XY spectra that go in the lensing response function, e.g. ``uC_T_T`` for the unlensed TT spectrum
+1. ``uC_X_Y`` for CMB XY spectra that go in the lensing response function,
+   e.g. ``uC_T_T`` for the TT spectrum (despite the notation, this should be the
+   lensed spectrum, not the unlensed spectrum)
 2. ``tC_X_Y`` for total CMB XY spectra that go in the lensing
    filters. e.g. ``tC_T_T`` for the total TT spectrum that includes beam-deconvolved noise.
 
@@ -192,12 +194,12 @@ The following are currently available:
 3. Schaan, Ferraro 2018 shear TT
 
 For the shear estimator, the built-in variable scheme also expects duC_T_T , the
-logarithmic derivative of the unlensed CMB temperature,
+logarithmic derivative of the lensed CMB temperature,
 
 .. code-block:: python
 
     >>> feed_dict['duC_T_T'] =
-	utils.interp(ells,np.gradient(np.log(ucltt),np.log(ells)))(modlmap)
+	utils.interp(ells,np.gradient(np.log(lcltt),np.log(ells)))(modlmap)
 
 
 Once this is added to feed_dict, noise curves and shear maps can be obtained as

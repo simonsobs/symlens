@@ -185,13 +185,13 @@ def test_shear():
 
     feed_dict = {}
     cltt = theory.lCl('TT',modlmap)
-    feed_dict['uC_T_T'] = theory.uCl('TT',modlmap)
+    feed_dict['uC_T_T'] = theory.lCl('TT',modlmap)
     feed_dict['tC_T_T'] = (cltt+n2d)
     feed_dict['X'] = kmap/kbeam
     feed_dict['Y'] = kmap/kbeam
 
     ells = np.arange(0,10000,1)
-    ucltt = theory.uCl('TT',ells)
+    ucltt = theory.lCl('TT',ells)
     feed_dict['duC_T_T'] = s.interp(ells,np.gradient(np.log(ucltt),np.log(ells)))(modlmap)
     sAl = s.A_l(shape,wcs,feed_dict,"shear","TT",xmask=tmask,ymask=tmask)
     sNl = s.N_l(shape,wcs,feed_dict,"shear","TT",
