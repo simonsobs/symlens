@@ -5,6 +5,7 @@ import sympy
 from pixell import fft as efft, enmap
 import os,sys
 from .factorize import Ldl1,Ldl2,l1,l2,cos2t12,sin2t12,l1x,l2x,l1y,l2y,e,L,Lx,Ly,Lxl1,Lxl2,integrate
+import warnings
 
 def _cross_names(x,y,fn1,fn2):
     if fn1 is None: e1 = ""
@@ -299,11 +300,15 @@ def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev
 
     """
     cross_integral = cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
-                                            xmask=xmask,ymask=xmask,
-                                            field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,groups=groups)
+                                           xmask=xmask,ymask=xmask,
+                                           field_names_alpha=field_names_alpha,
+                                           field_names_beta=field_names_beta,
+                                           groups=groups)
     if Aalpha is None: Aalpha = A_l_custom(shape,wcs,feed_dict,falpha,Falpha,xmask=xmask,ymask=ymask)
     if Abeta is None: Abeta = A_l_custom(shape,wcs,feed_dict,fbeta,Fbeta,xmask=xmask,ymask=ymask)
-    return 0.25 * Aalpha * Abeta * cross_integral
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return 0.25 * Aalpha * Abeta * cross_integral
     
 def N_l_cross(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_XY,
               xmask=None,ymask=None,
@@ -369,7 +374,7 @@ def N_l_cross(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_X
 
     """
     falpha,Falpha,Falpha_rev = get_mc_expressions(alpha_estimator,alpha_XY,field_names=field_names_alpha)
-    fbeta,Fbeta,Fbeta_rev = get_mc_expressions(alpha_estimator,alpha_XY,field_names=field_names_beta)
+    fbeta,Fbeta,Fbeta_rev = get_mc_expressions(beta_estimator,beta_XY,field_names=field_names_beta)
     return N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
                              xmask=xmask,ymask=ymask,
                              field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,
@@ -491,7 +496,9 @@ def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None):
 
     """
     integral = integrate(shape,wcs,feed_dict,f*F/L/L,xmask=xmask,ymask=xmask,groups=groups).real
-    return 1/integral
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return 1/integral
     
 def A_l(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None):
     """

@@ -2,6 +2,9 @@ import sympy
 from sympy import Symbol
 import numpy as np
 import warnings
+import contextlib
+import os,sys
+import warnings
 
 known_zeros = [('E','B'), ('B','E'), ('T','B'), ('B','T')]
 def _handle_missing_keys(t1,t2,comp1,comp2):
@@ -68,7 +71,9 @@ def evaluate(symbolic_term,feed_dict):
     # in symbols
     varstrs = [str(x) for x in symbols]
     edict = {k: get_feed(feed_dict,k) for k in varstrs}
-    evaled = np.nan_to_num(func_term(**edict))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        evaled = np.nan_to_num(func_term(**edict))
     return evaled
 
 def substitute_trig(l1x,l1y,l2x,l2y,l1,l2):
