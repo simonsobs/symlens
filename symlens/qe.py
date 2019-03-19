@@ -80,19 +80,19 @@ class QE(object):
     """
     def __init__(self,shape,wcs,feed_dict,estimator=None,XY=None,
                  f=None,F=None,xmask=None,ymask=None,
-                 field_names=None,groups=None):
+                 field_names=None,groups=None,kmask=None):
         """
         """
         if f is not None:
             assert F is not None
             assert estimator is None
             assert XY is None
-            self.Al = A_l_custom(shape,wcs,feed_dict,f,F,xmask=xmask,ymask=ymask,groups=groups)
+            self.Al = A_l_custom(shape,wcs,feed_dict,f,F,xmask=xmask,ymask=ymask,groups=groups,kmask=kmask)
             self.F = F
             self.custom = True
         else:
             assert F is None
-            self.Al = A_l(shape,wcs,feed_dict,estimator,XY,xmask=xmask,ymask=ymask,field_names=field_names)
+            self.Al = A_l(shape,wcs,feed_dict,estimator,XY,xmask=xmask,ymask=ymask,field_names=field_names,kmask=kmask)
             self.estimator = estimator
             self.XY = XY
             self.field_names = field_names
@@ -101,8 +101,10 @@ class QE(object):
         self.wcs = wcs
         self.xmask = xmask
         self.ymask = ymask
+        kmask = 1 if kmask is None else kmask
+        self.kmask = kmask
         
-    def reconstruct(self,feed_dict,xname='X_l1',yname='Y_l2',groups=None):
+    def reconstruct(self,feed_dict,xname='X_l1',yname='Y_l2',groups=None,pixel_units=True):
         """
         Returns a normalized reconstruction corresponding to the initialized
         mode-coupling estimator.
@@ -138,14 +140,14 @@ class QE(object):
             uqe = unnormalized_quadratic_estimator_custom(self.shape,self.wcs,feed_dict,
                                                            self.F,xname=xname,yname=yname,
                                                            xmask=self.xmask,ymask=self.ymask,
-                                                           groups=groups)
+                                                           groups=groups,pixel_units=pixel_units)
         else:
             uqe = unnormalized_quadratic_estimator(self.shape,self.wcs,feed_dict,
                                                    self.estimator,self.XY,
                                                    xname=xname,yname=yname,
                                                    field_names=self.field_names,
-                                                   xmask=self.xmask,ymask=self.ymask)
-        return self.Al * uqe
+                                                   xmask=self.xmask,ymask=self.ymask,pixel_units=pixel_units)
+        return self.Al * uqe * self.kmask
 
 def cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
                            xmask=None,ymask=None,
@@ -229,7 +231,7 @@ def cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
 def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
                       xmask=None,ymask=None,
                       field_names_alpha=None,field_names_beta=None,
-                      falpha=None,fbeta=None,Aalpha=None,Abeta=None,groups=None):
+                      falpha=None,fbeta=None,Aalpha=None,Abeta=None,groups=None,kmask=None):
     """
     Returns the 2D cross-covariance between two custom mode-coupling estimators. 
     This involves 3 integrals, unless pre-calculated normalizations Al are provided.
@@ -304,15 +306,15 @@ def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev
                                            field_names_alpha=field_names_alpha,
                                            field_names_beta=field_names_beta,
                                            groups=groups)
-    if Aalpha is None: Aalpha = A_l_custom(shape,wcs,feed_dict,falpha,Falpha,xmask=xmask,ymask=ymask)
-    if Abeta is None: Abeta = A_l_custom(shape,wcs,feed_dict,fbeta,Fbeta,xmask=xmask,ymask=ymask)
+    if Aalpha is None: Aalpha = A_l_custom(shape,wcs,feed_dict,falpha,Falpha,xmask=xmask,ymask=ymask,kmask=kmask)
+    if Abeta is None: Abeta = A_l_custom(shape,wcs,feed_dict,fbeta,Fbeta,xmask=xmask,ymask=ymask,kmask=kmask)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return 0.25 * Aalpha * Abeta * cross_integral
     
 def N_l_cross(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_XY,
               xmask=None,ymask=None,
-              Aalpha=None,Abeta=None,field_names_alpha=None,field_names_beta=None):
+              Aalpha=None,Abeta=None,field_names_alpha=None,field_names_beta=None,kmask=None):
     """
     Returns the 2D cross-covariance between two pre-defined mode-coupling estimators. 
     This involves 3 integrals, unless pre-calculated normalizations Al are provided.
@@ -378,11 +380,11 @@ def N_l_cross(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_X
     return N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
                              xmask=xmask,ymask=ymask,
                              field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,
-                             falpha=falpha,fbeta=fbeta,Aalpha=Aalpha,Abeta=Abeta,groups=_get_groups(alpha_estimator,beta_estimator))
+                             falpha=falpha,fbeta=fbeta,Aalpha=Aalpha,Abeta=Abeta,groups=_get_groups(alpha_estimator,beta_estimator),kmask=kmask)
 
 def N_l(shape,wcs,feed_dict,estimator,XY,
         xmask=None,ymask=None,
-        Al=None,field_names=None):
+        Al=None,field_names=None,kmask=None):
     """
     Returns the 2D noise corresponding to a pre-defined mode-coupling estimator
     NOT assuming that it is optimal. This involves 2 integrals, unless a pre-calculated
@@ -435,10 +437,10 @@ def N_l(shape,wcs,feed_dict,estimator,XY,
     return N_l_cross_custom(shape,wcs,feed_dict,XY,XY,Falpha,Falpha,Falpha_rev,
                              xmask=xmask,ymask=ymask,
                              field_names_alpha=field_names,field_names_beta=field_names,
-                             falpha=falpha,fbeta=falpha,Aalpha=Al,Abeta=Al,groups=_get_groups(estimator))
+                             falpha=falpha,fbeta=falpha,Aalpha=Al,Abeta=Al,groups=_get_groups(estimator),kmask=kmask)
 
     
-def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None):
+def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=None):
     """
     Returns the 2D normalization corresponding to a custom
     mode-coupling estimator.
@@ -496,11 +498,12 @@ def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None):
 
     """
     integral = integrate(shape,wcs,feed_dict,f*F/L/L,xmask=xmask,ymask=xmask,groups=groups).real
+    kmask = 1 if kmask is None else kmask
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        return 1/integral
+        return np.nan_to_num(1/integral)*kmask
     
-def A_l(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None):
+def A_l(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None,kmask=None):
     """
     Returns the normalization corresponding to a pre-defined mode-coupling estimator.
 
@@ -546,13 +549,13 @@ def A_l(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None)
     """
     
     f,F,Fr = get_mc_expressions(estimator,XY,field_names=field_names)
-    return A_l_custom(shape,wcs,feed_dict,f,F,xmask=xmask,ymask=ymask,groups=_get_groups(estimator))
+    return A_l_custom(shape,wcs,feed_dict,f,F,xmask=xmask,ymask=ymask,groups=_get_groups(estimator),kmask=kmask)
 
 def N_l_from_A_l_optimal(shape,wcs,Al):
     modlmap = enmap.modlmap(shape,wcs)
     return Al * modlmap**2./4.    
 
-def N_l_optimal(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None):
+def N_l_optimal(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None,kmask=None):
     """
     Returns the 2D noise corresponding to a pre-defined mode-coupling estimator
     but assuming that it is optimal, i.e.
@@ -599,11 +602,11 @@ def N_l_optimal(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_nam
 
     """
     
-    Al = A_l(shape,wcs,feed_dict,estimator,XY,xmask,ymask,field_names=field_names)
+    Al = A_l(shape,wcs,feed_dict,estimator,XY,xmask,ymask,field_names=field_names,kmask=kmask)
     modlmap = enmap.modlmap(shape,wcs)
     return N_l_from_A_l_optimal(shape,wcs,Al)
 
-def N_l_optimal_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None):
+def N_l_optimal_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=None):
     """
     Returns the 2D noise corresponding to a custom
     mode-coupling estimator but assuming that it is optimal, i.e.
@@ -662,10 +665,11 @@ def N_l_optimal_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None
 
     """
     
-    Al = A_l_custom(shape,wcs,feed_dict,f,F,xmask,ymask,groups=groups)
+    Al = A_l_custom(shape,wcs,feed_dict,f,F,xmask,ymask,groups=groups,kmask=kmask)
     return N_l_from_A_l_optimal(shape,wcs,Al)
 
-def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname='X_l1',yname='Y_l2',xmask=None,ymask=None,groups=None):
+def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname='X_l1',yname='Y_l2',
+                                            xmask=None,ymask=None,groups=None,pixel_units=True):
     """
     Returns a normalized reconstruction corresponding to a custom
     mode-coupling estimator.
@@ -728,9 +732,10 @@ def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname='X_l1',y
 
     """
     
-    return integrate(shape,wcs,feed_dict,e(xname)*e(yname)*F/2,xmask=xmask,ymask=xmask,groups=groups,pixel_units=True)
+    return integrate(shape,wcs,feed_dict,e(xname)*e(yname)*F/2,xmask=xmask,ymask=xmask,groups=groups,pixel_units=pixel_units)
 
-def unnormalized_quadratic_estimator(shape,wcs,feed_dict,estimator,XY,xname='X_l1',yname='Y_l2',field_names=None,xmask=None,ymask=None):
+def unnormalized_quadratic_estimator(shape,wcs,feed_dict,estimator,XY,
+                                     xname='X_l1',yname='Y_l2',field_names=None,xmask=None,ymask=None,pixel_units=True):
     """
     Returns a normalized reconstruction corresponding to specified pre-defined
     mode-coupling estimator.
@@ -793,13 +798,13 @@ def unnormalized_quadratic_estimator(shape,wcs,feed_dict,estimator,XY,xname='X_l
 
     
     f,F,Fr = get_mc_expressions(estimator,XY,field_names=field_names)
-    return unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname=xname,yname=yname,xmask=xmask,ymask=ymask,groups=_get_groups(estimator,noise=False))
+    return unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname=xname,yname=yname,xmask=xmask,ymask=ymask,groups=_get_groups(estimator,noise=False),pixel_units=pixel_units)
 
 
 def reconstruct(shape,wcs,feed_dict,estimator=None,XY=None,
                 f=None,F=None,xmask=None,ymask=None,
                 field_names=None,norm_groups=None,est_groups=None,
-                xname='X_l1',yname='Y_l2'):
+                xname='X_l1',yname='Y_l2',kmask=None,pixel_units=True):
 
 
     """
@@ -875,8 +880,8 @@ def reconstruct(shape,wcs,feed_dict,estimator=None,XY=None,
     
     qe = QE(shape,wcs,feed_dict,estimator=estimator,XY=XY,
             f=f,F=F,xmask=xmask,ymask=ymask,
-            field_names=field_names,groups=norm_groups)
-    return qe.reconstruct(feed_dict,xname=xname,yname=yname,groups=est_groups)
+            field_names=field_names,groups=norm_groups,kmask=kmask)
+    return qe.reconstruct(feed_dict,xname=xname,yname=yname,groups=est_groups,pixel_units=pixel_units)
     
 
 
@@ -938,6 +943,9 @@ def lensing_response_f(XY,rev=False,curl=False):
         f = (iLdl1*iu1('EE')+iLdl2*iu2('EE'))*cos2t12
     elif XY=='EB':
         f = iLdl1*iu1('EE')*sin2t12
+    else:
+        print(XY)
+        raise ValueError
     return f
 
 def get_mc_expressions(estimator,XY,field_names=None):
@@ -1033,7 +1041,15 @@ def get_mc_expressions(estimator,XY,field_names=None):
         cos2theta = ((2*(cLdl1)**2)/L**2/l1**2) - 1
         cos2theta_rev = ((2*(cLdl2)**2)/L**2/l2**2) - 1
         F = cos2theta * u1('TT') * du1('TT')/2/t1('TT')/t1('TT') 
-        Fr = cos2theta_rev * u2('TT') * du2('TT')/2/t2('TT')/t2('TT')  
+        Fr = cos2theta_rev * u2('TT') * du2('TT')/2/t2('TT')/t2('TT')
+        
+    elif estimator=='ptsrc': # Osborne et. al. point source hardening
+        f = 1
+        fr = 1
+        
+    elif estimator=='mask': # Namikawa et. al. mask bias hardening
+        f = - t1('TT') - t2('TT')
+        fr = f
 
     return f,F,Fr
         
