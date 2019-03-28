@@ -948,6 +948,48 @@ def lensing_response_f(XY,rev=False,curl=False):
         raise ValueError
     return f
 
+
+def rotation_response_f(XY,rev=False):
+
+    """
+    Returns the mode-coupling response f(l1,l2) for CMB rotation.
+
+    Parameters
+    ----------
+
+    XY: str
+        The XY pair for the requested estimator. This must belong to one
+        of EE, TE, ET, EB or TB.
+    rev: boolean, optional
+        Whether to swap l1 and l2. Defaults to False.
+
+    Returns
+    -------
+
+    f : :obj:`sympy.core.symbol.Symbol` , optional
+        A sympy expression containing the mode-coupling response. See the Usage guide
+        for details.
+
+    """
+
+    def iu1(ab): return u2(ab) if rev else u1(ab)
+    def iu2(ab): return u1(ab) if rev else u2(ab)
+
+    if XY=='TE':
+        f = 2*iu1('TE')*sin2t12
+    elif XY=='TB':
+        f = 2*iu1('TE')*cos2t12
+    elif XY=='EE':
+        f = 2*(iu1('EE')-iu2('EE'))*sin2t12
+    elif XY=='EB':
+        f = 2*(iu1('EE')-iu2('BB'))*cos2t12
+    elif XY=='BB':
+        f = (iu1('BB')+iu2('BB'))*sin2t12
+    else:
+        print(XY)
+        raise ValueError
+    return f
+
 def get_mc_expressions(estimator,XY,field_names=None):
     """
     Pre-defined mode coupling expressions.
@@ -1033,24 +1075,35 @@ def get_mc_expressions(estimator,XY,field_names=None):
             if Y=='B':
                 F = Fp * u1(X+'E') * sin2t12
                 Fr = Fpr * u2(X+'E') * sin2t12
-            
+
     elif estimator=='shear': # Schaan, Ferraro 2018
         assert XY=="TT", "Shear estimator only implemented for TT."
         f = cLdl2*u2('TT')
         fr = cLdl1*u1('TT')
         cos2theta = ((2*(cLdl1)**2)/L**2/l1**2) - 1
         cos2theta_rev = ((2*(cLdl2)**2)/L**2/l2**2) - 1
-        F = cos2theta * u1('TT') * du1('TT')/2/t1('TT')/t1('TT') 
+        F = cos2theta * u1('TT') * du1('TT')/2/t1('TT')/t1('TT')
         Fr = cos2theta_rev * u2('TT') * du2('TT')/2/t2('TT')/t2('TT')
-        
+
     elif estimator=='ptsrc': # Osborne et. al. point source hardening
         f = 1
         fr = 1
-        
+
     elif estimator=='mask': # Namikawa et. al. mask bias hardening
         f = - t1('TT') - t2('TT')
         fr = f
 
-    return f,F,Fr
-        
+    elif estimator=='rot':  # Yadav et. al. 2009
+        f = rotation_response_f(XY,rev=False)
+        fr = rotation_response_f(XY,rev=True)
+        if XY in ['EE','BB']:
+            F = f / 2 / t1(XY) / t2(XY)
+            Fr = fr / 2 / t2(XY) / t1(XY)
+        elif XY in ['TB','EB']:
+            F = f / t1(XX) / t2(YY)
+            Fr = fr / t2(XX) / t1(YY)
+        elif XY=='TE':
+            F = (t1('EE')*t2('TT')*f - t1('TE')*t2('TE')*fr)/(t1('TT')*t2('EE')*t1('EE')*t2('TT'))
+            Fr = (t2('EE')*t1('TT')*fr - t2('TE')*t1('TE')*f)/(t2('TT')*t1('EE')*t2('EE')*t1('TT'))
 
+    return f,F,Fr
