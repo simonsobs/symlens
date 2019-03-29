@@ -966,7 +966,7 @@ def rotation_response_f(XY,rev=False):
     Returns
     -------
 
-    f : :obj:`sympy.core.symbol.Symbol` , optional
+    f : :obj:`sympy.core.symbol.Symbol`
         A sympy expression containing the mode-coupling response. See the Usage guide
         for details.
 
