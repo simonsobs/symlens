@@ -105,7 +105,7 @@ function. That's it! Now we can get the pre-built Hu Okamoto 2001
 .. code-block:: python
 
 	>>> import symlens as s
-	>>> nl2d = s.N_l(shape,wcs,"hu_ok","TT",feed_dict,xmask=kmask,ymask=kmask)
+	>>> nl2d = s.N_l(shape,wcs,feed_dict,"hu_ok","TT",xmask=kmask,ymask=kmask)
 	
 
 which can be binned in annuli to obtain a lensing noise curve.
@@ -126,13 +126,13 @@ One can then obtain the unnormalized lensing map simply by doing,
 .. code-block:: python
 
 	>>> ukappa = s.unnormalized_quadratic_estimator(shape,wcs,
-				"hu_ok","TT",feed_dict,xmask=kmask,ymask=kmask)
+				feed_dict,"hu_ok","TT",xmask=kmask,ymask=kmask)
 
 and also obtain its normalization,
 
 .. code-block:: python
 
-	>>> norm = s.A_l(shape,wcs,"hu_ok","TT",feed_dict,xmask=kmask,ymask=kmask)
+	>>> norm = s.A_l(shape,wcs,feed_dict,"hu_ok","TT",xmask=kmask,ymask=kmask)
 
 and combine into a normalized Fourier space CMB lensing convergence map,
 
@@ -159,9 +159,9 @@ the TT estimator itself,
 .. code-block:: python
 
    >>> Nl =
-   N_l_cross(shape,wcs,alpha_estimator="hu_ok",alpha_XY="TT",
+   N_l_cross(shape,wcs,feed_dict,alpha_estimator="hu_ok",alpha_XY="TT",
 				beta_estimator="hu_ok",beta_XY="TT",
-				feed_dict,xmask=kmask,ymask=kmask)
+				xmask=kmask,ymask=kmask)
 
 
 This works just like before. However, what if the instrument noise in the first leg of the
@@ -171,12 +171,12 @@ providing names for these fields.
 
 .. code-block:: python
 
-   >>> Nl = N_l_cross(shape,wcs,
-				alpha_estimator="hu_ok",alpha_XY="TT",
-				beta_estimator="hu_ok",beta_XY="TT",
-				feed_dict,xmask=kmask,ymask=kmask,
-				field_names_alpha=['E1','E2'],
-				field_names_beta=['E1','E2'])
+   >>> Nl = N_l_cross(shape,wcs,feed_dict,
+		alpha_estimator="hu_ok",alpha_XY="TT",
+		beta_estimator="hu_ok",beta_XY="TT",
+		xmask=kmask,ymask=kmask,
+		field_names_alpha=['E1','E2'],
+		field_names_beta=['E1','E2'])
 
 This modifies the total power spectra variable names that feed_dict expects. The
 above command will not work unless ``tC_E1_T_E1_T``, ``tC_E2_T_E2_T``,
@@ -207,10 +207,10 @@ before,
 
 .. code-block:: python
 
-    >>> Nl = s.N_l(shape,wcs,"shear","TT",feed_dict,
+    >>> Nl = s.N_l(shape,wcs,feed_dict,"shear","TT",
               xmask=tmask,ymask=tmask)
-    >>> Al = s.A_l(shape,wcs,"shear","TT",feed_dict,xmask=tmask,ymask=tmask)
-    >>> ushear = s.unnormalized_quadratic_estimator(shape,wcs,"shear","TT",feed_dict,xmask=tmask,ymask=tmask)
+    >>> Al = s.A_l(shape,wcs,feed_dict,"shear","TT",xmask=tmask,ymask=tmask)
+    >>> ushear = s.unnormalized_quadratic_estimator(shape,wcs,feed_dict,"shear","TT",xmask=tmask,ymask=tmask)
     >>> shear = Al * ushear
 
     
@@ -309,7 +309,7 @@ integral.
 
 .. code-block:: python
 				
-   >>> integral = s.integrate(shape,wcs,expr1,feed_dict,xmask=xmask,ymask=xmask).real
+   >>> integral = s.integrate(shape,wcs,feed_dict,expr1,xmask=xmask,ymask=xmask).real
 
 
 .. _pixell: https://github.com/simonsobs/pixell/
