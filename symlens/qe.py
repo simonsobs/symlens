@@ -104,7 +104,7 @@ class QE(object):
         kmask = 1 if kmask is None else kmask
         self.kmask = kmask
         
-    def reconstruct(self,feed_dict,xname='X_l1',yname='Y_l2',groups=None,pixel_units=True):
+    def reconstruct(self,feed_dict,xname='X_l1',yname='Y_l2',groups=None,physical_units=True):
         """
         Returns a normalized reconstruction corresponding to the initialized
         mode-coupling estimator.
@@ -140,13 +140,13 @@ class QE(object):
             uqe = unnormalized_quadratic_estimator_custom(self.shape,self.wcs,feed_dict,
                                                            self.F,xname=xname,yname=yname,
                                                            xmask=self.xmask,ymask=self.ymask,
-                                                           groups=groups,pixel_units=pixel_units)
+                                                           groups=groups,physical_units=physical_units)
         else:
             uqe = unnormalized_quadratic_estimator(self.shape,self.wcs,feed_dict,
                                                    self.estimator,self.XY,
                                                    xname=xname,yname=yname,
                                                    field_names=self.field_names,
-                                                   xmask=self.xmask,ymask=self.ymask,pixel_units=pixel_units)
+                                                   xmask=self.xmask,ymask=self.ymask,physical_units=physical_units)
         return self.Al * uqe * self.kmask
 
 def cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
@@ -225,7 +225,8 @@ def cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
     tCad_l1 = e(_cross_names(a,d,fnalpha1,fnbeta2) + "_l1")
     tCbc_l2 = e(_cross_names(b,c,fnalpha2,fnbeta1) + "_l2")
     expr = Falpha*(Fbeta*tCac_l1*tCbd_l2+Fbeta_rev*tCad_l1*tCbc_l2)
-    integral = integrate(shape,wcs,feed_dict,expr,xmask=xmask,ymask=xmask,groups=groups).real
+    integral = integrate(shape,wcs,feed_dict,expr,xmask=xmask,ymask=xmask,groups=groups,
+                         physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
     return integral
 
 def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
@@ -314,7 +315,8 @@ def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev
     
 def N_l_cross(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_XY,
               xmask=None,ymask=None,
-              Aalpha=None,Abeta=None,field_names_alpha=None,field_names_beta=None,kmask=None):
+              Aalpha=None,Abeta=None,field_names_alpha=None,field_names_beta=None,kmask=None,
+              skip_filter_field_names=False):
     """
     Returns the 2D cross-covariance between two pre-defined mode-coupling estimators. 
     This involves 3 integrals, unless pre-calculated normalizations Al are provided.
@@ -375,8 +377,8 @@ def N_l_cross(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_X
         The requested 2D cross-covariance.
 
     """
-    falpha,Falpha,Falpha_rev = get_mc_expressions(alpha_estimator,alpha_XY,field_names=field_names_alpha)
-    fbeta,Fbeta,Fbeta_rev = get_mc_expressions(beta_estimator,beta_XY,field_names=field_names_beta)
+    falpha,Falpha,Falpha_rev = get_mc_expressions(alpha_estimator,alpha_XY,field_names=field_names_alpha if not(skip_filter_field_names) else None)
+    fbeta,Fbeta,Fbeta_rev = get_mc_expressions(beta_estimator,beta_XY,field_names=field_names_beta  if not(skip_filter_field_names) else None)
     return N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
                              xmask=xmask,ymask=ymask,
                              field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,
@@ -497,7 +499,9 @@ def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=N
 
 
     """
-    integral = integrate(shape,wcs,feed_dict,f*F/L/L,xmask=xmask,ymask=xmask,groups=groups).real
+    integral = integrate(shape,wcs,feed_dict,f*F/L/L,
+                         xmask=xmask,ymask=xmask,groups=groups,
+                         physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
     kmask = 1 if kmask is None else kmask
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -669,7 +673,7 @@ def N_l_optimal_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None
     return N_l_from_A_l_optimal(shape,wcs,Al)
 
 def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname='X_l1',yname='Y_l2',
-                                            xmask=None,ymask=None,groups=None,pixel_units=True):
+                                            xmask=None,ymask=None,groups=None,physical_units=True):
     """
     Returns a normalized reconstruction corresponding to a custom
     mode-coupling estimator.
@@ -690,11 +694,7 @@ def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname='X_l1',y
         also contain the keys with name xname and yname (see below), which 
         contain the 2D maps X and Y for the data from which the quadratic estimate
         is constructed.
-    f: :obj:`sympy.core.symbol.Symbol` , optional
-        A sympy expression containing the mode-coupling response. See the Usage guide
-        for details. If this is specified, the argument F is required, and the arguments
-        estimator, XY and field_names are ignored.
-    F: :obj:`sympy.core.symbol.Symbol` , optional
+    F: :obj:`sympy.core.symbol.Symbol`
         A sympy expression containing the estimator filter. See the Usage guide
         for details. 
     xmask: (Ny,Nx) ndarray,optional
@@ -732,10 +732,10 @@ def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname='X_l1',y
 
     """
     
-    return integrate(shape,wcs,feed_dict,e(xname)*e(yname)*F/2,xmask=xmask,ymask=xmask,groups=groups,pixel_units=pixel_units)
+    return integrate(shape,wcs,feed_dict,e(xname)*e(yname)*F/2,xmask=xmask,ymask=xmask,groups=groups,physical_units=physical_units)
 
 def unnormalized_quadratic_estimator(shape,wcs,feed_dict,estimator,XY,
-                                     xname='X_l1',yname='Y_l2',field_names=None,xmask=None,ymask=None,pixel_units=True):
+                                     xname='X_l1',yname='Y_l2',field_names=None,xmask=None,ymask=None,physical_units=True):
     """
     Returns a normalized reconstruction corresponding to specified pre-defined
     mode-coupling estimator.
@@ -798,13 +798,13 @@ def unnormalized_quadratic_estimator(shape,wcs,feed_dict,estimator,XY,
 
     
     f,F,Fr = get_mc_expressions(estimator,XY,field_names=field_names)
-    return unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname=xname,yname=yname,xmask=xmask,ymask=ymask,groups=_get_groups(estimator,noise=False),pixel_units=pixel_units)
+    return unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname=xname,yname=yname,xmask=xmask,ymask=ymask,groups=_get_groups(estimator,noise=False),physical_units=physical_units)
 
 
 def reconstruct(shape,wcs,feed_dict,estimator=None,XY=None,
                 f=None,F=None,xmask=None,ymask=None,
                 field_names=None,norm_groups=None,est_groups=None,
-                xname='X_l1',yname='Y_l2',kmask=None,pixel_units=True):
+                xname='X_l1',yname='Y_l2',kmask=None,physical_units=True):
 
 
     """
@@ -881,7 +881,7 @@ def reconstruct(shape,wcs,feed_dict,estimator=None,XY=None,
     qe = QE(shape,wcs,feed_dict,estimator=estimator,XY=XY,
             f=f,F=F,xmask=xmask,ymask=ymask,
             field_names=field_names,groups=norm_groups,kmask=kmask)
-    return qe.reconstruct(feed_dict,xname=xname,yname=yname,groups=est_groups,pixel_units=pixel_units)
+    return qe.reconstruct(feed_dict,xname=xname,yname=yname,groups=est_groups,physical_units=physical_units)
     
 
 

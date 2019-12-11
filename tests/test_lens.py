@@ -61,7 +61,7 @@ def test_hdv_huok_planck():
     cents,nl1d6 = binner.bin(s.N_l(shape,wcs,feed_dict,"hdv","TT",xmask=xmask,ymask=xmask))
 
     clkk = theory.gCl('kk',ells)
-    pl = io.Plotter(xyscale='linlog')
+    pl = io.Plotter(xyscale='linlog',xlabel='L',ylabel='C')
     pl.add(cents,nl1d)
     pl.add(cents,nl1d2)
     # pl.add(cents,nl1d3)
@@ -142,7 +142,7 @@ def test_lens_recon():
     cents,Nlkk = binner.bin(qest.N.Nlkk['TT'])
     cents,Nlkk2 = binner.bin(Nl)
 
-    pl = io.Plotter(xyscale='linlog')
+    pl = io.Plotter(xyscale='linlog',xlabel='L',ylabel='C')
     pl.add(cents,pii1d,color='k',lw=3)
     pl.add(cents,pir1d,label='orphics')
     pl.add(cents,pir1d2,label='hdv symlens')
@@ -208,7 +208,7 @@ def test_shear():
     
     cents,Nlkk3 = binner.bin(sNl)
 
-    pl = io.Plotter(xyscale='loglog')
+    pl = io.Plotter(xyscale='loglog',xlabel='L',ylabel='C')
     pl.add(ells,theory.gCl('kk',ells))
     pl.add(cents,pii1d,color='k',lw=3)
     pl.add(cents,pir1d3,label='shear')
@@ -264,7 +264,7 @@ def test_pol():
     feed_dict['tC_T_E'] = clte
 
     ells = np.arange(0,10000,1)
-    pl = io.Plotter(xyscale='loglog')
+    pl = io.Plotter(xyscale='loglog',xlabel='L',ylabel='C')
     pl.add(ells,theory.gCl('kk',ells))
     imask = {'T':tmask, 'E':pmask,'B': pmask}
     for pol in pols:

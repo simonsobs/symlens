@@ -12,6 +12,12 @@ def _handle_missing_keys(t1,t2,comp1,comp2):
         warnings.warn("Assuming " + t1 + " is zero. Provide a value for it in feed_dict if not!")
         return 0
     else:
+        if "_" in comp1:
+            c1s = comp1.split("_")
+            c2s = comp2.split("_")
+            print(c1s,c2s)
+            assert len(c1s)==len(c2s)==2
+            return _handle_missing_keys(t1,t2,c1s[1],c2s[1])
         raise KeyError('Neither ',t1, ' nor ', t2, ' were found in feed_dict.')
 
 

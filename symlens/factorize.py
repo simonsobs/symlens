@@ -34,8 +34,9 @@ def e(symbol):
     # TODO: add exceptions if symbol doesn't correspond to key structure
     return Symbol(symbol)
 
-ifft = lambda x: efft.ifft(x,axes=[-2,-1],normalize=True)
-fft = lambda x: efft.fft(x,axes=[-2,-1])
+ifft = lambda x: enmap.ifft(x,normalize='phys')
+fft = lambda x: enmap.fft(x,normalize='phys')
+
 evaluate = _helpers.evaluate
 
 def factorize_2d_convolution_integral(expr,l1funcs=None,l2funcs=None,groups=None,validate=True):
@@ -194,7 +195,7 @@ def factorize_2d_convolution_integral(expr,l1funcs=None,l2funcs=None,groups=None
 
 
 
-def integrate(shape,wcs,feed_dict,expr,xmask=None,ymask=None,cache=True,validate=True,groups=None,pixel_units=False):
+def integrate(shape,wcs,feed_dict,expr,xmask=None,ymask=None,cache=True,validate=True,groups=None,physical_units=True):
     """
     Integrate an arbitrary expression after factorizing it.
 
@@ -221,7 +222,7 @@ def integrate(shape,wcs,feed_dict,expr,xmask=None,ymask=None,cache=True,validate
     groups: list,optional 
         Group all terms such that they have common factors of the provided list of 
         expressions to reduce the number of FFTs.
-    pixel_units: boolean,optional
+    physical_units: boolean,optional
         Whether the input is in pixel units or not.
 
     Returns
@@ -234,6 +235,7 @@ def integrate(shape,wcs,feed_dict,expr,xmask=None,ymask=None,cache=True,validate
     # Geometry
     modlmap = enmap.modlmap(shape,wcs)
     lymap,lxmap = enmap.lmap(shape,wcs)
+
     pixarea = np.prod(enmap.pixshape(shape,wcs))
     feed_dict['L'] = modlmap
     feed_dict['Ly'] = lymap
@@ -258,8 +260,8 @@ def integrate(shape,wcs,feed_dict,expr,xmask=None,ymask=None,cache=True,validate
         ogroup_symbols = factorize_2d_convolution_integral(expr,l1funcs=l1funcs,l2funcs=l2funcs,
                                                                          validate=validate,groups=groups)
 
-    def _fft(x): return fft(x+0j)
-    def _ifft(x): return ifft(x+0j)
+    def _fft(x): return fft(enmap.enmap(x+0j,wcs))
+    def _ifft(x): return ifft(enmap.enmap(x+0j,wcs))
 
     if cache:
         cached_u1s = []
@@ -303,7 +305,7 @@ def integrate(shape,wcs,feed_dict,expr,xmask=None,ymask=None,cache=True,validate
             ffft = _fft(vals[i,...])
             val += ot2d*ffft
      
-    mul = 1 if pixel_units else 1./pixarea
+    mul = 1 if physical_units else 1./pixarea
     return val * mul
 
 
