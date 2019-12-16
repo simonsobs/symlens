@@ -224,7 +224,88 @@ def cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
     tCbd_l2 = e(_cross_names(b,d,fnalpha2,fnbeta2) + "_l2")
     tCad_l1 = e(_cross_names(a,d,fnalpha1,fnbeta2) + "_l1")
     tCbc_l2 = e(_cross_names(b,c,fnalpha2,fnbeta1) + "_l2")
-    expr = Falpha*(Fbeta*tCac_l1*tCbd_l2+Fbeta_rev*tCad_l1*tCbc_l2)
+    Dexpr1 = tCac_l1*tCbd_l2
+    Dexpr2 = tCad_l1*tCbc_l2
+    return generic_cross_integral(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,Dexpr1,Dexpr2,
+                           xmask=xmask,ymask=ymask,
+                           field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,groups=groups)
+
+def generic_cross_integral(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,Dexpr1,Dexpr2,
+                           xmask=None,ymask=None,
+                           field_names_alpha=None,field_names_beta=None,groups=None):
+    """
+    Calculates the integral
+
+    .. math::
+        \\int \\frac{d^2 \\vec{l}_1 }{ (2\\pi)^2 }  F_{\\alpha}(\\vec{l}_1,\\vec{l}_2) (F_{\\beta}(\\vec{l}_1,\\vec{l}_2) D_1({l_1},{l_2})+ F_{\\beta}(\\vec{l}_2,\\vec{l}_1) D_2({l_1},{l_2}))
+
+    where
+    alpha_XY = "ab"
+    beta_XY = "cd"
+
+
+    Parameters
+    ----------
+
+    shape : tuple
+        The shape of the array for the geometry of the footprint. Typically 
+        (...,Ny,Nx) for Ny pixels in the y-direction and Nx in the x-direction.
+    wcs : :obj:`astropy.wcs.wcs.WCS`
+        The wcs object completing the specification of the geometry of the footprint.
+    feed_dict: dict
+        Mapping from names of custom symbols to numpy arrays used in the normalization and
+        reconstruction  calculation. When using pre-defined mode-coupling estimators, typical
+        keys that must be present are 'uC_X_Y' and 'tC_X_Y', where X and Y
+        depend on the requested estimator XY (see below). This feed_dict must
+        also contain the keys with name xname and yname (see below), which 
+        contain the 2D maps X and Y for the data from which the quadratic estimate
+        is constructed.
+    alpha_XY: str
+        The XY pair for the first estimator. Typical examples include "TT" and "EB".
+    beta_XY: str
+        The XY pair for the first estimator. Typical examples include "TT" and "EB".
+    Falpha: :obj:`sympy.core.symbol.Symbol`
+        A sympy expression containing the first alpha estimator filter. See the Usage guide
+        for details. 
+    Fbeta: :obj:`sympy.core.symbol.Symbol` 
+        A sympy expression containing the second beta estimator filter. See the Usage guide
+        for details. 
+    Fbeta_rev: :obj:`sympy.core.symbol.Symbol` 
+        Same as above but with l1 and l2 swapped.
+    Dexpr1: :obj:`sympy.core.symbol.Symbol`  
+        A sympy expression entering in the generic integral.
+    Dexpr2: :obj:`sympy.core.symbol.Symbol`  
+        A second sympy expression entering in the generic integral.
+    xmask: (Ny,Nx) ndarray,optional
+        Fourier space 2D mask for the l1 part of the integral. Defaults to ones.
+    ymask:  (Ny,Nx) ndarray, optional
+        Fourier space 2D mask for the l2 part of the integral. Defaults to ones.
+    field_names_alpha: 2 element list, optional
+        Providing a list field_names
+        modifies the total power spectra variable names that feed_dict expects. 
+        Typically, names like "tC_T_T" and "tC_T_E" are expected. But if field_names
+        is ["E1","E2"] for example, variable names like ``tC_E1_T_E1_T``, ``tC_E2_T_E2_T``,
+        ``tC_E1_T_E2_T``, ``tC_E2_T_E1_T`` are expected to be present in feed_dict. This
+        allows for more custom noise correlations.
+    field_names_beta: 2 element list, optional
+        As above, but for the second beta estimator.
+    groups: list,optional 
+        Group all terms in the normalization calclulation such that they have common factors 
+        of the provided list of expressions to reduce the number of FFTs.
+
+    Returns
+    -------
+
+    integral : (Ny,Nx) ndarray
+        Returns the integral described above.
+
+
+    """
+    a,b = alpha_XY
+    c,d = beta_XY
+    fnalpha1,fnalpha2 = field_names_alpha if field_names_alpha is not None else (None,None)
+    fnbeta1,fnbeta2 = field_names_beta if field_names_beta is not None else (None,None)
+    expr = Falpha*(Fbeta*Dexpr1+Fbeta_rev*Dexpr2)
     integral = integrate(shape,wcs,feed_dict,expr,xmask=xmask,ymask=xmask,groups=groups,
                          physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
     return integral

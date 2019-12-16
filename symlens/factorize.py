@@ -4,7 +4,7 @@ from sympy import Symbol,Function
 import sympy
 from pixell import fft as efft, enmap
 import os,sys
-from . import _helpers
+from . import utils
 
 """
 Routines to reduce and evaluate symbolic mode coupling integrals
@@ -27,7 +27,7 @@ Lxl2 = (Ly*l2x-Lx*l2y) # \vec{L} x \vec{l}_2 for curl
 
 # More built-in special symbols
 # cos(2\theta_{12}), sin(2\theta_{12}) for polarization
-cos2t12,sin2t12 = _helpers.substitute_trig(l1x,l1y,l2x,l2y,l1,l2)
+cos2t12,sin2t12 = utils.substitute_trig(l1x,l1y,l2x,l2y,l1,l2)
 
 # Custom symbol wrapper
 def e(symbol):
@@ -37,7 +37,7 @@ def e(symbol):
 ifft = lambda x: enmap.ifft(x,normalize='phys')
 fft = lambda x: enmap.fft(x,normalize='phys')
 
-evaluate = _helpers.evaluate
+evaluate = utils.evaluate
 
 def factorize_2d_convolution_integral(expr,l1funcs=None,l2funcs=None,groups=None,validate=True):
     """Reduce a sympy expression of variables l1x,l1y,l2x,l2y,l1,l2 into a sum of 
