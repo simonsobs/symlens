@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from pixell import enmap,utils
+from pixell import enmap,utils as putils
 import sympy
 from sympy import Symbol
 import warnings
@@ -188,8 +188,8 @@ def rect_geometry(width_arcmin=None,width_deg=None,px_res_arcmin=0.5,proj="car",
         vwidth = hwidth
     else:
         vwidth = height_arcmin/2.
-    arcmin =  utils.arcmin
-    degree =  utils.degree
+    arcmin =  putils.arcmin
+    degree =  putils.degree
     pos = [[-vwidth*arcmin+yoffset_degree*degree,-hwidth*arcmin+xoffset_degree*degree],[vwidth*arcmin+yoffset_degree*degree,hwidth*arcmin+xoffset_degree*degree]]
     shape, wcs = enmap.geometry(pos=pos, res=px_res_arcmin*arcmin, proj=proj,**kwargs)
     if pol: shape = (3,)+shape
