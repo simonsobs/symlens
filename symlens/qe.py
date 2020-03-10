@@ -7,7 +7,7 @@ import os,sys
 from .factorize import Ldl1,Ldl2,l1,l2,cos2t12,sin2t12,l1x,l2x,l1y,l2y,e,L,Lx,Ly,Lxl1,Lxl2,integrate
 import warnings
 
-def _cross_names(x,y,fn1,fn2):
+def cross_names(x,y,fn1,fn2):
     if fn1 is None: e1 = ""
     else:
         assert "_" not in fn1, "Field names cannot have underscores. Sorry! Use a hyphen instead."
@@ -220,10 +220,10 @@ def cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
     c,d = beta_XY
     fnalpha1,fnalpha2 = field_names_alpha if field_names_alpha is not None else (None,None)
     fnbeta1,fnbeta2 = field_names_beta if field_names_beta is not None else (None,None)
-    tCac_l1 = e(_cross_names(a,c,fnalpha1,fnbeta1) + "_l1")
-    tCbd_l2 = e(_cross_names(b,d,fnalpha2,fnbeta2) + "_l2")
-    tCad_l1 = e(_cross_names(a,d,fnalpha1,fnbeta2) + "_l1")
-    tCbc_l2 = e(_cross_names(b,c,fnalpha2,fnbeta1) + "_l2")
+    tCac_l1 = e(cross_names(a,c,fnalpha1,fnbeta1) + "_l1")
+    tCbd_l2 = e(cross_names(b,d,fnalpha2,fnbeta2) + "_l2")
+    tCad_l1 = e(cross_names(a,d,fnalpha1,fnbeta2) + "_l1")
+    tCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1) + "_l2")
     Dexpr1 = tCac_l1*tCbd_l2
     Dexpr2 = tCad_l1*tCbc_l2
     return generic_cross_integral(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,Dexpr1,Dexpr2,
@@ -1116,12 +1116,15 @@ def get_mc_expressions(estimator,XY,field_names=None):
     YY = Y+Y
     f1,f2 = field_names if field_names is not None else (None,None)
 
+    # NOTE: previously, this used cross(f1,f2) for t1 and t2
+    # I've switched it to t1 = cross(f1,f1) and t2 = cross(f2,f2)
+    # to allow for different filters for the two fields.
     def t1(ab):
         a,b = ab
-        return e(_cross_names(a,b,f1,f2)+"_l1")
+        return e(cross_names(a,b,f1,f1)+"_l1")
     def t2(ab):
         a,b = ab
-        return e(_cross_names(a,b,f1,f2)+"_l2")
+        return e(cross_names(a,b,f2,f2)+"_l2")
     
     hus = ['hu_ok_curl','hdv_curl','hu_ok','hdv']
     curls = ['hu_ok_curl','hdv_curl']
