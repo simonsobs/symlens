@@ -724,13 +724,6 @@ def N_l_optimal_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None
         Fourier space 2D mask for the l1 part of the integral. Defaults to ones.
     ymask:  (Ny,Nx) ndarray, optional
         Fourier space 2D mask for the l2 part of the integral. Defaults to ones.
-    field_names: 2 element list, optional
-        When a pre-defined mode-coupling estimator is used, providing a list field_names
-        modifies the total power spectra variable names that feed_dict expects. 
-        Typically, names like "tC_T_T" and "tC_T_E" are expected. But if field_names
-        is ["E1","E2"] for example, variable names like ``tC_E1_T_E1_T``, ``tC_E2_T_E2_T``,
-        ``tC_E1_T_E2_T``, ``tC_E2_T_E1_T`` are expected to be present in feed_dict. This
-        allows for more custom noise correlations.
     xname: str,optional
         The name of the key in feed_dict where the X map in the XY quadratic estimator
         is stored. Defaults to X_l1.
@@ -782,13 +775,6 @@ def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname='X_l1',y
         Fourier space 2D mask for the l1 part of the integral. Defaults to ones.
     ymask:  (Ny,Nx) ndarray, optional
         Fourier space 2D mask for the l2 part of the integral. Defaults to ones.
-    field_names: 2 element list, optional
-        When a pre-defined mode-coupling estimator is used, providing a list field_names
-        modifies the total power spectra variable names that feed_dict expects. 
-        Typically, names like "tC_T_T" and "tC_T_E" are expected. But if field_names
-        is ["E1","E2"] for example, variable names like ``tC_E1_T_E1_T``, ``tC_E2_T_E2_T``,
-        ``tC_E1_T_E2_T``, ``tC_E2_T_E1_T`` are expected to be present in feed_dict. This
-        allows for more custom noise correlations.
     xname: str,optional
         The name of the key in feed_dict where the X map in the XY quadratic estimator
         is stored. Defaults to X_l1.
