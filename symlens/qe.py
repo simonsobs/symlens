@@ -306,7 +306,7 @@ def generic_cross_integral(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbe
     fnalpha1,fnalpha2 = field_names_alpha if field_names_alpha is not None else (None,None)
     fnbeta1,fnbeta2 = field_names_beta if field_names_beta is not None else (None,None)
     expr = Falpha*(Fbeta*Dexpr1+Fbeta_rev*Dexpr2)
-    integral = integrate(shape,wcs,feed_dict,expr,xmask=xmask,ymask=xmask,groups=groups,
+    integral = integrate(shape,wcs,feed_dict,expr,xmask=xmask,ymask=ymask,groups=groups,
                          physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
     return integral
 
@@ -384,7 +384,7 @@ def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev
 
     """
     cross_integral = cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
-                                           xmask=xmask,ymask=xmask,
+                                           xmask=xmask,ymask=ymask,
                                            field_names_alpha=field_names_alpha,
                                            field_names_beta=field_names_beta,
                                            groups=groups)
@@ -581,7 +581,7 @@ def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=N
 
     """
     integral = integrate(shape,wcs,feed_dict,f*F/L/L,
-                         xmask=xmask,ymask=xmask,groups=groups,
+                         xmask=xmask,ymask=ymask,groups=groups,
                          physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
     kmask = 1 if kmask is None else kmask
     with warnings.catch_warnings():
@@ -813,7 +813,7 @@ def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname='X_l1',y
 
     """
     
-    return integrate(shape,wcs,feed_dict,e(xname)*e(yname)*F/2,xmask=xmask,ymask=xmask,groups=groups,physical_units=physical_units)
+    return integrate(shape,wcs,feed_dict,e(xname)*e(yname)*F/2,xmask=xmask,ymask=ymask,groups=groups,physical_units=physical_units)
 
 def unnormalized_quadratic_estimator(shape,wcs,feed_dict,estimator,XY,
                                      xname='X_l1',yname='Y_l2',field_names=None,xmask=None,ymask=None,physical_units=True):
