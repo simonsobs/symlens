@@ -7,7 +7,15 @@ import os,sys
 from .factorize import Ldl1,Ldl2,l1,l2,cos2t12,sin2t12,l1x,l2x,l1y,l2y,e,L,Lx,Ly,Lxl1,Lxl2,integrate
 import warnings
 
-def cross_names(x,y,fn1,fn2):
+def cross_names(x,y,fn1,fn2,data=False,cross=False):
+    if data:
+        assert not(cross)
+        dstr = "d"
+    elif cross:
+        assert not(data)
+        dstr = "c"
+    else:
+        dstr = "t"
     if fn1 is None: e1 = ""
     else:
         assert "_" not in fn1, "Field names cannot have underscores. Sorry! Use a hyphen instead."
@@ -16,7 +24,7 @@ def cross_names(x,y,fn1,fn2):
     else:
         assert "_" not in fn2, "Field names cannot have underscores. Sorry! Use a hyphen instead."
         e2 = fn2+"_"
-    return 'tC_%s%s_%s%s' % (e1,x,e2,y)
+    return '%sC_%s%s_%s%s' % (dstr,e1,x,e2,y)
 
 def _get_groups(e1,e2=None,noise=True):
     if e2 is None: e2 = e1
@@ -388,11 +396,78 @@ def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev
                                            field_names_alpha=field_names_alpha,
                                            field_names_beta=field_names_beta,
                                            groups=groups)
+    return generic_noise_expression(cross_integral,shape,wcs,feed_dict,falpha,fbeta,Falpha,Fbeta, \
+                                    xmask,ymask,kmask,Aalpha,Abeta)
+
+def generic_noise_expression(cross_integral,shape,wcs,feed_dict,falpha,fbeta,Falpha,Fbeta,xmask=None,ymask=None,kmask=None,
+                             Aalpha=None,Abeta=None):
+    """
+    returns (1/4) A_alpha * A_beta * cross_integral
+    """
     if Aalpha is None: Aalpha = A_l_custom(shape,wcs,feed_dict,falpha,Falpha,xmask=xmask,ymask=ymask,kmask=kmask)
     if Abeta is None: Abeta = A_l_custom(shape,wcs,feed_dict,fbeta,Fbeta,xmask=xmask,ymask=ymask,kmask=kmask)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return 0.25 * Aalpha * Abeta * cross_integral
+
+
+def RDN0_analytic(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_XY,
+                  split_estimator=False,Aalpha=None,Abeta=None,xmask=None,ymask=None,kmask=None,
+                  field_names_alpha=None,field_names_beta=None,skip_filter_field_names=False):
+    """
+    Often lovingly called the `dumb' N0 by ACT lensers, this is the analytic expression
+    for the realization-dependependent N0 correction when the noise is isotropic and
+    no mask is present, for the usual co-add estimator.
+
+    feed_dict should have
+    dC_T_T, etc. the realized total data power spectrum.
+    tC_T_T, etc. the usual theory spectra for the total power.
+    uC_T_T, etc. the usual theory spectra for the CMB signal.
+    """
+    falpha,Falpha,Falpha_rev = get_mc_expressions(alpha_estimator,alpha_XY,field_names=field_names_alpha if not(skip_filter_field_names) else None)
+    fbeta,Fbeta,Fbeta_rev = get_mc_expressions(beta_estimator,beta_XY,field_names=field_names_beta  if not(skip_filter_field_names) else None)
+    return RDN0_analytic_generic(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
+                                 falpha=falpha,fbeta=fbeta,Aalpha=Aalpha,Abeta=Abeta,xmask=xmask,ymask=ymask,kmask=kmask,
+                                 field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,
+                                 split_estimator=split_estimator)
+
+def RDN0_analytic_generic(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
+                          falpha=None,fbeta=None,Aalpha=None,Abeta=None,xmask=None,ymask=None,kmask=None,
+                          field_names_alpha=None,field_names_beta=None,split_estimator=False,groups=None):
+    """
+    Often lovingly called the `dumb' N0 by ACT lensers, this is the analytic expression
+    for the realization-dependependent N0 correction when the noise is isotropic and
+    no mask is present.
+
+    feed_dict should have
+    dC_T_T, etc. the realized total data power spectrum.
+    tC_T_T, etc. the usual theory spectra for the total power.
+    uC_T_T, etc. the usual theory spectra for the CMB signal.
+    If split_estimator is true:
+    tC_T_T etc. should be the total coadd power spectrum used in filters
+    cC_T_T etc. should be the actual cross-power, which is usually tC without the instrument noise.
+    dC_T_T, etc. should be the realized cross-power average.
+    """
+    a,b = alpha_XY
+    c,d = beta_XY
+    fnalpha1,fnalpha2 = field_names_alpha if field_names_alpha is not None else (None,None)
+    fnbeta1,fnbeta2 = field_names_beta if field_names_beta is not None else (None,None)
+    tCac_l1 = e(cross_names(a,c,fnalpha1,fnbeta1,cross=split_estimator) + "_l1")
+    tCbd_l2 = e(cross_names(b,d,fnalpha2,fnbeta2,cross=split_estimator) + "_l2")
+    tCad_l1 = e(cross_names(a,d,fnalpha1,fnbeta2,cross=split_estimator) + "_l1")
+    tCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1,cross=split_estimator) + "_l2")
+    dCac_l1 = e(cross_names(a,c,fnalpha1,fnbeta1,data=True) + "_l1")
+    dCbd_l2 = e(cross_names(b,d,fnalpha2,fnbeta2,data=True) + "_l2")
+    dCad_l1 = e(cross_names(a,d,fnalpha1,fnbeta2,data=True) + "_l1")
+    dCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1,data=True) + "_l2")
+    Dexpr1 = dCac_l1*tCbd_l2 + tCac_l1*dCbd_l2 - tCac_l1*tCbd_l2
+    Dexpr2 = dCad_l1*tCbc_l2 + tCad_l1*dCbc_l2 - tCad_l1*tCbc_l2
+    gint = generic_cross_integral(shape,wcs,feed_dict,alpha_XY,alpha_XY,Falpha,Fbeta,Fbeta_rev,Dexpr1,Dexpr2,
+                                  xmask=xmask,ymask=ymask,
+                                  field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,groups=groups)
+    return generic_noise_expression(gint,shape,wcs,feed_dict,falpha,fbeta,Falpha,Fbeta, \
+                                    xmask,ymask,kmask,Aalpha,Abeta)
+
     
 def N_l_cross(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_XY,
               xmask=None,ymask=None,
@@ -638,7 +713,7 @@ def A_l(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None,
 
 def N_l_from_A_l_optimal(shape,wcs,Al):
     modlmap = enmap.modlmap(shape,wcs)
-    return Al * modlmap**2./4.    
+    return Al * modlmap*(modlmap+1.)/4.    
 
 def N_l_optimal(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None,kmask=None):
     """

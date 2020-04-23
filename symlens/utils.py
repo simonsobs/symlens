@@ -6,7 +6,7 @@ from sympy import Symbol
 import warnings
 import contextlib
 import os,sys
-
+_warn = False
 
 """
 pixell helpers
@@ -207,7 +207,7 @@ Sympy helpers
 known_zeros = [('E','B'), ('B','E'), ('T','B'), ('B','T')]
 def _handle_missing_keys(t1,t2,comp1,comp2):
     if (comp1,comp2) in known_zeros:
-        warnings.warn("Assuming " + t1 + " is zero. Provide a value for it in feed_dict if not!")
+        if _warn: warnings.warn("Assuming " + t1 + " is zero. Provide a value for it in feed_dict if not!")
         return 0
     else:
         if "_" in comp1:
