@@ -7,15 +7,7 @@ import os,sys
 from .factorize import Ldl1,Ldl2,l1,l2,cos2t12,sin2t12,l1x,l2x,l1y,l2y,e,L,Lx,Ly,Lxl1,Lxl2,integrate
 import warnings
 
-def cross_names(x,y,fn1,fn2,data=False,cross=False):
-    if data:
-        assert not(cross)
-        dstr = "d"
-    elif cross:
-        assert not(data)
-        dstr = "c"
-    else:
-        dstr = "t"
+def cross_names(x,y,fn1,fn2,dstr="t"):
     if fn1 is None: e1 = ""
     else:
         assert "_" not in fn1, "Field names cannot have underscores. Sorry! Use a hyphen instead."
@@ -159,7 +151,7 @@ class QE(object):
 
 def cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
                            xmask=None,ymask=None,
-                           field_names_alpha=None,field_names_beta=None,groups=None):
+                           field_names_alpha=None,field_names_beta=None,groups=None,power_name="t"):
     """
     Calculates the integral
 
@@ -228,10 +220,10 @@ def cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
     c,d = beta_XY
     fnalpha1,fnalpha2 = field_names_alpha if field_names_alpha is not None else (None,None)
     fnbeta1,fnbeta2 = field_names_beta if field_names_beta is not None else (None,None)
-    tCac_l1 = e(cross_names(a,c,fnalpha1,fnbeta1) + "_l1")
-    tCbd_l2 = e(cross_names(b,d,fnalpha2,fnbeta2) + "_l2")
-    tCad_l1 = e(cross_names(a,d,fnalpha1,fnbeta2) + "_l1")
-    tCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1) + "_l2")
+    tCac_l1 = e(cross_names(a,c,fnalpha1,fnbeta1,power_name) + "_l1")
+    tCbd_l2 = e(cross_names(b,d,fnalpha2,fnbeta2,power_name) + "_l2")
+    tCad_l1 = e(cross_names(a,d,fnalpha1,fnbeta2,power_name) + "_l1")
+    tCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1,power_name) + "_l2")
     Dexpr1 = tCac_l1*tCbd_l2
     Dexpr2 = tCad_l1*tCbc_l2
     return generic_cross_integral(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,Dexpr1,Dexpr2,
@@ -321,7 +313,8 @@ def generic_cross_integral(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbe
 def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
                       xmask=None,ymask=None,
                       field_names_alpha=None,field_names_beta=None,
-                      falpha=None,fbeta=None,Aalpha=None,Abeta=None,groups=None,kmask=None):
+                      falpha=None,fbeta=None,Aalpha=None,Abeta=None,
+                     groups=None,kmask=None,power_name="t"):
     """
     Returns the 2D cross-covariance between two custom mode-coupling estimators. 
     This involves 3 integrals, unless pre-calculated normalizations Al are provided.
@@ -395,7 +388,7 @@ def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev
                                            xmask=xmask,ymask=ymask,
                                            field_names_alpha=field_names_alpha,
                                            field_names_beta=field_names_beta,
-                                           groups=groups)
+                                           groups=groups,power_name=power_name)
     return generic_noise_expression(cross_integral,shape,wcs,feed_dict,falpha,fbeta,Falpha,Fbeta, \
                                     xmask,ymask,kmask,Aalpha,Abeta)
 
@@ -452,14 +445,14 @@ def RDN0_analytic_generic(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
     c,d = beta_XY
     fnalpha1,fnalpha2 = field_names_alpha if field_names_alpha is not None else (None,None)
     fnbeta1,fnbeta2 = field_names_beta if field_names_beta is not None else (None,None)
-    tCac_l1 = e(cross_names(a,c,fnalpha1,fnbeta1,cross=split_estimator) + "_l1")
-    tCbd_l2 = e(cross_names(b,d,fnalpha2,fnbeta2,cross=split_estimator) + "_l2")
-    tCad_l1 = e(cross_names(a,d,fnalpha1,fnbeta2,cross=split_estimator) + "_l1")
-    tCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1,cross=split_estimator) + "_l2")
-    dCac_l1 = e(cross_names(a,c,fnalpha1,fnbeta1,data=True) + "_l1")
-    dCbd_l2 = e(cross_names(b,d,fnalpha2,fnbeta2,data=True) + "_l2")
-    dCad_l1 = e(cross_names(a,d,fnalpha1,fnbeta2,data=True) + "_l1")
-    dCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1,data=True) + "_l2")
+    tCac_l1 = e(cross_names(a,c,fnalpha1,fnbeta1,'n') + "_l1")
+    tCbd_l2 = e(cross_names(b,d,fnalpha2,fnbeta2,'n') + "_l2")
+    tCad_l1 = e(cross_names(a,d,fnalpha1,fnbeta2,'n') + "_l1")
+    tCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1,'n') + "_l2")
+    dCac_l1 = e(cross_names(a,c,fnalpha1,fnbeta1,'d') + "_l1")
+    dCbd_l2 = e(cross_names(b,d,fnalpha2,fnbeta2,'d') + "_l2")
+    dCad_l1 = e(cross_names(a,d,fnalpha1,fnbeta2,'d') + "_l1")
+    dCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1,'d') + "_l2")
     Dexpr1 = dCac_l1*tCbd_l2 + tCac_l1*dCbd_l2 - tCac_l1*tCbd_l2
     Dexpr2 = dCad_l1*tCbc_l2 + tCad_l1*dCbc_l2 - tCad_l1*tCbc_l2
     gint = generic_cross_integral(shape,wcs,feed_dict,alpha_XY,alpha_XY,Falpha,Fbeta,Fbeta_rev,Dexpr1,Dexpr2,
@@ -472,7 +465,7 @@ def RDN0_analytic_generic(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
 def N_l_cross(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_XY,
               xmask=None,ymask=None,
               Aalpha=None,Abeta=None,field_names_alpha=None,field_names_beta=None,kmask=None,
-              skip_filter_field_names=False):
+              skip_filter_field_names=False,power_name="t"):
     """
     Returns the 2D cross-covariance between two pre-defined mode-coupling estimators. 
     This involves 3 integrals, unless pre-calculated normalizations Al are provided.
@@ -536,13 +529,15 @@ def N_l_cross(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_X
     falpha,Falpha,Falpha_rev = get_mc_expressions(alpha_estimator,alpha_XY,field_names=field_names_alpha if not(skip_filter_field_names) else None)
     fbeta,Fbeta,Fbeta_rev = get_mc_expressions(beta_estimator,beta_XY,field_names=field_names_beta  if not(skip_filter_field_names) else None)
     return N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
-                             xmask=xmask,ymask=ymask,
-                             field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,
-                             falpha=falpha,fbeta=fbeta,Aalpha=Aalpha,Abeta=Abeta,groups=_get_groups(alpha_estimator,beta_estimator),kmask=kmask)
+                            xmask=xmask,ymask=ymask,
+                            field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,
+                            falpha=falpha,fbeta=fbeta,Aalpha=Aalpha,Abeta=Abeta,
+                            groups=_get_groups(alpha_estimator,beta_estimator),kmask=kmask,
+                            power_name=power_name)
 
 def N_l(shape,wcs,feed_dict,estimator,XY,
         xmask=None,ymask=None,
-        Al=None,field_names=None,kmask=None):
+        Al=None,field_names=None,kmask=None,power_name="t"):
     """
     Returns the 2D noise corresponding to a pre-defined mode-coupling estimator
     NOT assuming that it is optimal. This involves 2 integrals, unless a pre-calculated
@@ -593,9 +588,10 @@ def N_l(shape,wcs,feed_dict,estimator,XY,
     """
     falpha,Falpha,Falpha_rev = get_mc_expressions(estimator,XY,field_names=field_names)
     return N_l_cross_custom(shape,wcs,feed_dict,XY,XY,Falpha,Falpha,Falpha_rev,
-                             xmask=xmask,ymask=ymask,
-                             field_names_alpha=field_names,field_names_beta=field_names,
-                             falpha=falpha,fbeta=falpha,Aalpha=Al,Abeta=Al,groups=_get_groups(estimator),kmask=kmask)
+                            xmask=xmask,ymask=ymask,
+                            field_names_alpha=field_names,field_names_beta=field_names,
+                            falpha=falpha,fbeta=falpha,Aalpha=Al,Abeta=Al,
+                            groups=_get_groups(estimator),kmask=kmask,power_name=power_name)
 
     
 def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=None):
