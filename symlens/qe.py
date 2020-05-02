@@ -37,6 +37,35 @@ def _get_groups(e1,e2=None,noise=True):
     else:
         return None
     
+class HardenedTT(object):
+    def __init__(self,shape,wcs,feed_dict,xmask=None,ymask=None,kmask=None,Al=None,hardening='src',estimator='hu_ok'):
+        h = hardening
+        f_bias,F_bias,_ = get_mc_expressions(hardening,'TT')
+        f_phi,F_phi,_ = get_mc_expressions(estimator,'TT')
+        f_bh,F_bh,_ = get_mc_expressions(f'{h}-hardened','TT',estimator_to_harden=estimator)
+        self.fdict = feed_dict
+        # 1 / Response of the biasing agent to the biasing agent
+        self.fdict[f'A{h}_{h}_L'] = A_l_custom(shape,wcs,feed_dict,f_bias,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        # 1 / Response of the biasing agent to CMB lensing
+        self.fdict[f'Aphi_{h}_L'] = A_l_custom(shape,wcs,feed_dict,f_phi,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        self.Al = A_l_custom(shape,wcs,feed_dict,f_bh,F_bh,xmask=xmask,ymask=ymask,groups=None,kmask=kmask) if Al is None else Al
+        self.F_bh = F_bh
+        self.xmask = xmask
+        self.ymask = ymask
+        self.kmask = kmask
+        self.shape,self.wcs = shape,wcs
+    def get_Nl(self):
+        return N_l_cross_custom(self.shape,self.wcs,self.fdict,"TT","TT",self.F_bh,self.F_bh,self.F_bh,
+                                     xmask=self.xmask,ymask=self.ymask,
+                                     Aalpha=self.Al,Abeta=self.Al,groups=None,kmask=self.kmask)
+    def reconstruct(self,feed_dict,xname='X_l1',yname='Y_l2',groups=None,physical_units=True):
+        uqe = unnormalized_quadratic_estimator_custom(self.shape,self.wcs,feed_dict,
+                                                      self.F_bh,xname=xname,yname=yname,
+                                                      xmask=self.xmask,ymask=self.ymask,
+                                                      groups=groups,physical_units=physical_units)
+        return self.Al * uqe * self.kmask
+        
+        
     
 
 class QE(object):
@@ -536,9 +565,10 @@ def N_l_cross(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,beta_X
     falpha,Falpha,Falpha_rev = get_mc_expressions(alpha_estimator,alpha_XY,field_names=field_names_alpha if not(skip_filter_field_names) else None)
     fbeta,Fbeta,Fbeta_rev = get_mc_expressions(beta_estimator,beta_XY,field_names=field_names_beta  if not(skip_filter_field_names) else None)
     return N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
-                             xmask=xmask,ymask=ymask,
-                             field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,
-                             falpha=falpha,fbeta=fbeta,Aalpha=Aalpha,Abeta=Abeta,groups=_get_groups(alpha_estimator,beta_estimator),kmask=kmask)
+                            xmask=xmask,ymask=ymask,
+                            field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,
+                            falpha=falpha,fbeta=fbeta,Aalpha=Aalpha,Abeta=Abeta,
+                            groups=_get_groups(alpha_estimator,beta_estimator),kmask=kmask)
 
 def N_l(shape,wcs,feed_dict,estimator,XY,
         xmask=None,ymask=None,
@@ -1028,7 +1058,6 @@ def reconstruct(shape,wcs,feed_dict,estimator=None,XY=None,
 
 
 
-
 def u1(ab):
     a,b = ab
     return e('uC_%s_%s_l1' % (a,b))
@@ -1132,7 +1161,7 @@ def rotation_response_f(XY,rev=False):
         raise ValueError
     return f
 
-def get_mc_expressions(estimator,XY,field_names=None):
+def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'):
     """
     Pre-defined mode coupling expressions.
     Returns f(l1,l2), F(l1,l2), F(l2,l1).
@@ -1230,14 +1259,55 @@ def get_mc_expressions(estimator,XY,field_names=None):
         F = cos2theta * u1('TT') * du1('TT')/2/t1('TT')/t1('TT')
         Fr = cos2theta_rev * u2('TT') * du2('TT')/2/t2('TT')/t2('TT')
 
-    elif estimator=='ptsrc': # Osborne et. al. point source hardening
-        f = 1
-        fr = 1
-
+    elif estimator=='src':
+        f = e('pc_T_T_l1')*e('pc_T_T_l2')
+        F = f / t1(XY) / t2(XY) / 2
+        fr = f
+        Fr = F
+    elif estimator=='src-hardened':
+        """ Osborne et. al. point source hardening
+        This gives you the MC expressions for the source
+        hardened lensing estimator.
+        You have to provide the following during the
+        calculation apart from the usual spectra: 
+        (1) pc_T_T, the Fourier space profile
+        of the source, which is 1 for a point source.
+        (2) Asrc_src_L : 1 / the source estimator response to sources
+        (3) Aphi_src_L : 1 / the lens estimator response to sources
+        """
+        assert XY=="TT", "BH only implemented for TT."
+        f_phi,F_phi,_ = get_mc_expressions(estimator_to_harden,XY,field_names=field_names)
+        f_src,_,_ = get_mc_expressions('src',XY,field_names=field_names)
+        A_src_src = e('Asrc_src_L')
+        A_phi_src = e('Aphi_src_L')
+        f = f_phi - A_src_src / A_phi_src * f_src
+        F = f / t1(XY) / t2(XY) / 2
+        fr = f
+        Fr = F
     elif estimator=='mask': # Namikawa et. al. mask bias hardening
         f = - t1('TT') - t2('TT')
         fr = f
-
+        F = f / t1(XY) / t2(XY) / 2
+        fr = f
+        Fr = F
+    elif estimator=='mask-hardened':
+        """ Namikawa et. al. mask hardening
+        This gives you the MC expressions for the mask
+        hardened lensing estimator.
+        You have to provide the following during the
+        calculation apart from the usual spectra: 
+        (1) Amsk_msk_L : 1 / the mask estimator response to masks
+        (2) Aphi_msk_L : 1 / the lens estimator response to masks
+        """
+        assert XY=="TT", "BH only implemented for TT."
+        f_phi,F_phi,_ = get_mc_expressions(estimator_to_harden,XY,field_names=field_names)
+        f_msk,_,_ = get_mc_expressions('mask',XY,field_names=field_names)
+        A_msk_msk = e('Amask_mask_L')
+        A_phi_msk = e('Aphi_mask_L')
+        f = f_phi - A_msk_msk / A_phi_msk * f_msk
+        F = f / t1(XY) / t2(XY) / 2
+        fr = f
+        Fr = F
     elif estimator=='rot':  # Yadav et. al. 2009
         f = rotation_response_f(XY,rev=False)
         fr = rotation_response_f(XY,rev=True)
