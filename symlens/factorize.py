@@ -260,8 +260,10 @@ def integrate(shape,wcs,feed_dict,expr,xmask=None,ymask=None,cache=True,validate
         ogroup_symbols = factorize_2d_convolution_integral(expr,l1funcs=l1funcs,l2funcs=l2funcs,
                                                                          validate=validate,groups=groups)
 
-    def _fft(x): return fft(enmap.enmap(x+0j,wcs))
-    def _ifft(x): return ifft(enmap.enmap(x+0j,wcs))
+    def _fft(x): 
+        return fft(enmap.enmap(x+0j,wcs))
+    def _ifft(x): 
+        return ifft(enmap.enmap(x+0j,wcs))
 
     if cache:
         cached_u1s = []
