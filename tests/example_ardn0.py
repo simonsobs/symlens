@@ -50,7 +50,7 @@ feed_dict['tC_E_E'] = theory.lCl('EE',modlmap)
 # I am lazily leaving these as the lensed spectra, BUT PLEASE REPLACE
 # THESE with the realized data spectra you calculate!
 feed_dict['dC_T_T'] = theory.lCl('TT',modlmap)
-feed_dict['dC_T_E'] = theory.lCl('EE',modlmap)
+feed_dict['dC_T_E'] = theory.lCl('TE',modlmap)
 feed_dict['dC_E_E'] = theory.lCl('EE',modlmap)
 
 # The next set are the "nC" spectra. These are the analytic/expected power
@@ -59,7 +59,7 @@ feed_dict['dC_E_E'] = theory.lCl('EE',modlmap)
 # I am lazily leaving these as the lensed spectra, BUT PLEASE REPLACE
 # THESE with the expected theory total power spectrum!
 feed_dict['nC_T_T'] = theory.lCl('TT',modlmap)
-feed_dict['nC_T_E'] = theory.lCl('EE',modlmap)
+feed_dict['nC_T_E'] = theory.lCl('TE',modlmap)
 feed_dict['nC_E_E'] = theory.lCl('EE',modlmap)
 
 
