@@ -440,12 +440,16 @@ def RDN0_analytic(shape,wcs,feed_dict,alpha_estimator,alpha_XY,beta_estimator,be
     """
     Often lovingly called the `dumb' N0 by ACT lensers, this is the analytic expression
     for the realization-dependependent N0 correction when the noise is isotropic and
-    no mask is present, for the usual co-add estimator.
+    no mask is present.
 
     feed_dict should have
     dC_T_T, etc. the realized total data power spectrum.
-    tC_T_T, etc. the usual theory spectra for the total power.
+    tC_T_T, etc. should be the total coadd power spectrum used in filters
     uC_T_T, etc. the usual theory spectra for the CMB signal.
+    nC_T_T etc. should be the expected total theory power spectrum
+    But if split_estimator is true:
+    dC_T_T, etc. should be the realized cross-power average.
+    nC_T_T etc. should be the expected cross-power, which is usually nC without the instrument noise.
     """
     falpha,Falpha,Falpha_rev = get_mc_expressions(alpha_estimator,alpha_XY,field_names=field_names_alpha if not(skip_filter_field_names) else None)
     fbeta,Fbeta,Fbeta_rev = get_mc_expressions(beta_estimator,beta_XY,field_names=field_names_beta  if not(skip_filter_field_names) else None)
@@ -464,12 +468,12 @@ def RDN0_analytic_generic(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
 
     feed_dict should have
     dC_T_T, etc. the realized total data power spectrum.
-    tC_T_T, etc. the usual theory spectra for the total power.
+    tC_T_T, etc. should be the total coadd power spectrum used in filters
     uC_T_T, etc. the usual theory spectra for the CMB signal.
-    If split_estimator is true:
-    tC_T_T etc. should be the total coadd power spectrum used in filters
-    cC_T_T etc. should be the actual cross-power, which is usually tC without the instrument noise.
+    nC_T_T etc. should be the expected total theory power spectrum
+    But if split_estimator is true:
     dC_T_T, etc. should be the realized cross-power average.
+    nC_T_T etc. should be the expected cross-power, which is usually nC without the instrument noise.
     """
     a,b = alpha_XY
     c,d = beta_XY
@@ -1236,7 +1240,7 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
                 # this approximation is
                 F = (t1('EE')*t2('TT')*f - t1('TE')*t2('TE')*fr)/(t1('TT')*t2('EE')*t1('EE')*t2('TT'))
                 Fr = (t2('EE')*t1('TT')*fr - t2('TE')*t1('TE')*f)/(t2('TT')*t1('EE')*t2('EE')*t1('TT'))
-        elif estimator=='hdv':
+        elif estimator in ['hdv','hdv_curl']:
             Fp = cLdl1/t1(X+X)/t2(Y+Y)
             Fpr = cLdl2/t2(X+X)/t1(Y+Y)
             if Y=='T':

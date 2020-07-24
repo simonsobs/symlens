@@ -241,10 +241,14 @@ def integrate(shape,wcs,feed_dict,expr,xmask=None,ymask=None,cache=True,validate
     feed_dict['Ly'] = lymap
     feed_dict['Lx'] = lxmap
     shape = shape[-2:]
-    ones = np.ones(shape,dtype=np.float32)
+    ones = enmap.ones(shape,wcs,dtype=np.float32)
     val = 0.
-    if xmask is None: xmask = ones
-    if ymask is None: ymask = ones
+    if xmask is None: 
+        warnings.warn("No xmask specified; assuming all ones. This is probably not going to end well.")
+        xmask = ones
+    if ymask is None: 
+        warnings.warn("No xmask specified; assuming all ones. This is probably not going to end well.")
+        ymask = ones
 
     # Expression
     syms = expr.free_symbols
