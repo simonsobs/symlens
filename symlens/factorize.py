@@ -259,7 +259,6 @@ def integrate(shape,wcs,feed_dict,expr,xmask=None,ymask=None,cache=True,validate
         ogroups,ogroup_weights, \
         ogroup_symbols = factorize_2d_convolution_integral(expr,l1funcs=l1funcs,l2funcs=l2funcs,
                                                                          validate=validate,groups=groups)
-
     def _fft(x): 
         return fft(enmap.enmap(x+0j,wcs))
     def _ifft(x): 
