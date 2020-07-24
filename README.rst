@@ -39,7 +39,7 @@ serve as the backend for quick exploration of various kinds of estimators.
 Dependencies
 ============
 
-* Python>=2.7 or Python>=3.4
+* Python>=3.6
 * pixell_
 * numpy, sympy
 
