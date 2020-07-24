@@ -57,6 +57,23 @@ Usage
 
 See the Usage_ guide and the API Reference_.
 
+An important thing to remember is that by default, the code
+expects "physical" normalization of FFTs in pixell (not the
+default normalization in pixell), i.e. you
+should be passing in Fourier maps that come from something like
+
+.. code-block:: python
+		
+   kmap = enmap.fft(imap,normalize='phys')
+
+or
+
+.. code-block:: python
+		
+   kmaps = enmap.map2harm(imaps,normalize='phys')
+
+
+
 Contributing
 ------------
 

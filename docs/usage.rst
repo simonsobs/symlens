@@ -121,6 +121,22 @@ CMB, which for a quadratic estimator <XY> have default variable names of X and Y
 	>>> feed_dict['X'] = beam_deconvolved_fourier_T_map
 	>>> feed_dict['Y'] = beam_deconvolved_fourier_T_map
 
+An important thing to remember is that by default, the code
+expects "physical" normalization of FFTs in pixell (not the
+default normalization in pixell), i.e. you
+should be passing in Fourier maps that come from something like
+
+.. code-block:: python
+		
+   >>> beam_deconvolved_fourier_T_map = enmap.fft(imap,normalize='phys')
+
+or
+
+.. code-block:: python
+		
+   >>> beam_deconvolved_fourier_T_map = enmap.map2harm(imaps,normalize='phys')[0]
+
+	
 One can then obtain the unnormalized lensing map simply by doing,
 
 .. code-block:: python
