@@ -28,6 +28,7 @@ script:
 
 deploy:
   provider: pypi
+  skip_cleanup: true
   distributions: sdist bdist_wheel
   user: msyriac
   password:
