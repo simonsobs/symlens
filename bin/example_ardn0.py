@@ -76,3 +76,5 @@ rdn0_2d = qe.RDN0_analytic(shape,wcs,feed_dict,'hu_ok',XY,'hu_ok',UV,
 # the final rdn0 you get should be correct (and directly comparable to 
 # a standard N0 curve).
 
+# Here's how to get A_L. It might be different from other codes by L^2 and/or 4 factors!
+Al = qe.A_l(shape,wcs,feed_dict,'hu_ok',XY,xmask=cmb_kmask,ymask=cmb_kmask,kmask=lens_kmask)
