@@ -4,13 +4,14 @@ from pixell import enmap
 import numpy as np
 import os,sys
 from symlens import qe
+from enlib import bench
 
 # Say we want analytic RDN0 for the TTTE estimator
-XY='TT'
+XY='TE'
 UV='TE'
 
 # example geometry, you can use your own map's geometry
-shape,wcs = maps.rect_geometry(width_deg=5.,px_res_arcmin=2.0)
+shape,wcs = maps.rect_geometry(width_deg=25.,px_res_arcmin=0.5)
 modlmap = enmap.modlmap(shape,wcs)
 
 # symlens QEs always need you to specify 2d Fourier space masks
@@ -64,8 +65,9 @@ feed_dict['nC_E_E'] = theory.lCl('EE',modlmap)
 
 
 # Now we do a call to get the 2d analytic RDN0
-rdn0_2d = qe.RDN0_analytic(shape,wcs,feed_dict,'hu_ok',XY,'hu_ok',UV,
-                           xmask=cmb_kmask,ymask=cmb_kmask,kmask=lens_kmask)
+with bench.show("rdn0"):
+    rdn0_2d = qe.RDN0_analytic(shape,wcs,feed_dict,'hu_ok',XY,'hu_ok',UV,
+                               xmask=cmb_kmask,ymask=cmb_kmask,kmask=lens_kmask)
     
 # You can speed this up by providing pre-calculated normalizations in AlXY
 # and AlUV arguments, but (note to Alex) make sure you calculate that using symlens itself
