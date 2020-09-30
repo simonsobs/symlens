@@ -11,7 +11,7 @@ XY='TE'
 UV='TE'
 
 # example geometry, you can use your own map's geometry
-shape,wcs = maps.rect_geometry(width_deg=25.,px_res_arcmin=0.5)
+shape,wcs = maps.rect_geometry(width_deg=25.,px_res_arcmin=2.0)
 modlmap = enmap.modlmap(shape,wcs)
 
 # symlens QEs always need you to specify 2d Fourier space masks
@@ -63,13 +63,19 @@ feed_dict['nC_T_T'] = theory.lCl('TT',modlmap)
 feed_dict['nC_T_E'] = theory.lCl('TE',modlmap)
 feed_dict['nC_E_E'] = theory.lCl('EE',modlmap)
 
+# Here's how to get A_L. It might be different from other codes by L^2 and/or 4 factors!
+with bench.show("Al"):
+    AlXY = qe.A_l(shape,wcs,feed_dict,'hu_ok',XY,xmask=cmb_kmask,ymask=cmb_kmask,kmask=lens_kmask)
+with bench.show("Al"):
+    AlUV = qe.A_l(shape,wcs,feed_dict,'hu_ok',UV,xmask=cmb_kmask,ymask=cmb_kmask,kmask=lens_kmask)
+
 
 # Now we do a call to get the 2d analytic RDN0
 with bench.show("rdn0"):
     rdn0_2d = qe.RDN0_analytic(shape,wcs,feed_dict,'hu_ok',XY,'hu_ok',UV,
-                               xmask=cmb_kmask,ymask=cmb_kmask,kmask=lens_kmask)
+                               xmask=cmb_kmask,ymask=cmb_kmask,kmask=lens_kmask,Aalpha=AlXY,Abeta=AlUV)
     
-# You can speed this up by providing pre-calculated normalizations in AlXY
+# I have speed this up by providing pre-calculated normalizations in AlXY
 # and AlUV arguments, but (note to Alex) make sure you calculate that using symlens itself
 # to avoid problems due to differences in conventions between symlens
 # and Falcon.
@@ -78,5 +84,3 @@ with bench.show("rdn0"):
 # the final rdn0 you get should be correct (and directly comparable to 
 # a standard N0 curve).
 
-# Here's how to get A_L. It might be different from other codes by L^2 and/or 4 factors!
-Al = qe.A_l(shape,wcs,feed_dict,'hu_ok',XY,xmask=cmb_kmask,ymask=cmb_kmask,kmask=lens_kmask)
