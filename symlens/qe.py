@@ -688,7 +688,8 @@ def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=N
     integral = integrate(shape,wcs,feed_dict,f*F/L/L,
                          xmask=xmask,ymask=ymask,groups=groups,
                          physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
-    assert np.all(np.isfinite(integral))
+    modlmap = enmap.modlmap(shape,wcs)
+    assert np.all(np.isfinite(integral[modlmap>0]))
     kmask = 1 if kmask is None else kmask
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")

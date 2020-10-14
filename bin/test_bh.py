@@ -10,9 +10,13 @@ shape,wcs = maps.rect_geometry(width_deg=20.,px_res_arcmin=1.5,proj='plain')
 theory = cosmology.default_theory()
 modlmap = enmap.modlmap(shape,wcs)
 
-hardening = 'mask'
+hardening = 'src'
+
+# Lmax = 2000
+# cluster = False
+
 Lmax = 6000
-cluster = False
+cluster = True
 
 if cluster:
     xmask = maps.mask_kspace(shape,wcs,lmin=100,lmax=2000)
@@ -53,4 +57,10 @@ pl.add(cents,nl1d,ls='--')
 pl.add(cents,nlbh1d,ls=':')
 pl._ax.set_ylim(1e-8,5e-4)
 pl.done('bh.png')
+
+
+pl = io.Plotter('rCL',xyscale='linlin')
+pl.add(cents,nlbh1d/nl1d)
+pl.hline(y=1)
+pl.done('bhdiff.png')
 
