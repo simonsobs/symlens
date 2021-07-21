@@ -3,11 +3,14 @@ from orphics import maps,cosmology
 from pixell import enmap
 import numpy as np
 import os,sys
+
+sys.path.append('../')
+
 from symlens import qe
 
 # Say we want analytic RDN0 for the TTTE estimator
 XY='TT'
-UV='TE'
+UV='TT'
 
 # example geometry, you can use your own map's geometry
 shape,wcs = maps.rect_geometry(width_deg=5.,px_res_arcmin=2.0)

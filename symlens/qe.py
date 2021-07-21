@@ -32,14 +32,17 @@ def _get_groups(e1,e2=None,noise=True):
 class HardenedTT(object):
     def __init__(self,shape,wcs,feed_dict,xmask=None,ymask=None,kmask=None,Al=None,hardening='src',estimator='hu_ok'):
         h = hardening
+        #van Engelen commented this out - strings starting with 'f' are "formatted string literals" and only work in python>=3.6, see https://docs.python.org/3/reference/lexical_analysis.html#f-strings
         f_bias,F_bias,_ = get_mc_expressions(hardening,'TT')
         f_phi,F_phi,_ = get_mc_expressions(estimator,'TT')
-        f_bh,F_bh,_ = get_mc_expressions(f'{h}-hardened','TT',estimator_to_harden=estimator)
+        # f_bh,F_bh,_ = get_mc_expressions(f'{h}-hardened','TT',estimator_to_harden=estimator)
+        f_bh,F_bh,_ = get_mc_expressions('%s-hardened' % h,'TT',estimator_to_harden=estimator)
+
         self.fdict = feed_dict
         # 1 / Response of the biasing agent to the biasing agent
-        self.fdict[f'A{h}_{h}_L'] = A_l_custom(shape,wcs,feed_dict,f_bias,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        self.fdict['A%s_%s_L' % (h, h)] = A_l_custom(shape,wcs,feed_dict,f_bias,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
         # 1 / Response of the biasing agent to CMB lensing
-        self.fdict[f'Aphi_{h}_L'] = A_l_custom(shape,wcs,feed_dict,f_phi,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        self.fdict['Aphi_%s_L' % h] = A_l_custom(shape,wcs,feed_dict,f_phi,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
         self.Al = A_l_custom(shape,wcs,feed_dict,f_bh,F_bh,xmask=xmask,ymask=ymask,groups=None,kmask=kmask) if Al is None else Al
         self.F_bh = F_bh
         self.xmask = xmask
@@ -688,7 +691,8 @@ def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=N
     integral = integrate(shape,wcs,feed_dict,f*F/L/L,
                          xmask=xmask,ymask=ymask,groups=groups,
                          physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
-    assert np.all(np.isfinite(integral))
+    # van Engelen commented out.  Had [0,0] element as np.inf in python2
+    # assert np.all(np.isfinite(integral))
     kmask = 1 if kmask is None else kmask
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
