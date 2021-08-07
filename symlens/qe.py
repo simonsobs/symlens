@@ -627,8 +627,10 @@ def N_l(shape,wcs,feed_dict,estimator,XY,
                             falpha=falpha,fbeta=falpha,Aalpha=Al,Abeta=Al,
                             groups=_get_groups(estimator),kmask=kmask,power_name=power_name)
 
+def test():
+    print('Hello')
     
-def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=None):
+def A_l_custom(shape,wcs,feed_dict,estimator,f,F,xmask=None,ymask=None,groups=None,kmask=None):
     """
     Returns the 2D normalization corresponding to a custom
     mode-coupling estimator.
@@ -685,9 +687,15 @@ def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=N
 
 
     """
-    integral = integrate(shape,wcs,feed_dict,f*F/L/L,
+    if estimator == 'rot':
+        integral = integrate(shape,wcs,feed_dict,f*F,
                          xmask=xmask,ymask=ymask,groups=groups,
                          physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
+    else:
+        integral = integrate(shape,wcs,feed_dict,f*F/L/L,
+                         xmask=xmask,ymask=ymask,groups=groups,
+                         physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
+    
     modlmap = enmap.modlmap(shape,wcs)
     assert np.all(np.isfinite(integral[modlmap>0]))
     kmask = 1 if kmask is None else kmask
@@ -741,11 +749,14 @@ def A_l(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None,
     """
     
     f,F,Fr = get_mc_expressions(estimator,XY,field_names=field_names)
-    return A_l_custom(shape,wcs,feed_dict,f,F,xmask=xmask,ymask=ymask,groups=_get_groups(estimator),kmask=kmask)
+    return A_l_custom(shape,wcs,feed_dict,estimator,f,F,xmask=xmask,ymask=ymask,groups=_get_groups(estimator),kmask=kmask)
 
-def N_l_from_A_l_optimal(shape,wcs,Al):
+def N_l_from_A_l_optimal(shape,wcs,estimator,Al):
     modlmap = enmap.modlmap(shape,wcs)
-    return Al * modlmap*(modlmap+1.)/4.    
+    if estimator == 'rot':
+        return Al
+    elif:
+        return Al * modlmap*(modlmap+1.)/4.    
 
 def N_l_optimal(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None,kmask=None):
     """
@@ -796,7 +807,7 @@ def N_l_optimal(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_nam
     
     Al = A_l(shape,wcs,feed_dict,estimator,XY,xmask,ymask,field_names=field_names,kmask=kmask)
     modlmap = enmap.modlmap(shape,wcs)
-    return N_l_from_A_l_optimal(shape,wcs,Al)
+    return N_l_from_A_l_optimal(shape,wcs,estimator,Al)
 
 def N_l_optimal_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=None):
     """
@@ -853,7 +864,7 @@ def N_l_optimal_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None
     Al = A_l_custom(shape,wcs,feed_dict,f,F,xmask,ymask,groups=groups,kmask=kmask)
     return N_l_from_A_l_optimal(shape,wcs,Al)
 
-def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname='X_l1',yname='Y_l2',
+def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict, estimator, F,xname='X_l1',yname='Y_l2',
                                             xmask=None,ymask=None,groups=None,physical_units=True):
     """
     Returns a normalized reconstruction corresponding to a custom
@@ -905,8 +916,10 @@ def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname='X_l1',y
         can be performed on similar datasets.
 
     """
-    
-    res = integrate(shape,wcs,feed_dict,e(xname)*e(yname)*F/2,xmask=xmask,ymask=ymask,groups=groups,physical_units=physical_units)
+    if estimator == 'rot':    
+        res = integrate(shape,wcs,feed_dict,e(xname)*e(yname)*F,xmask=xmask,ymask=ymask,groups=groups,physical_units=physical_units)
+    else:
+        res = integrate(shape,wcs,feed_dict,e(xname)*e(yname)*F/2,xmask=xmask,ymask=ymask,groups=groups,physical_units=physical_units)
     assert np.all(np.isfinite(res))
     return res
 
@@ -974,7 +987,7 @@ def unnormalized_quadratic_estimator(shape,wcs,feed_dict,estimator,XY,
 
     
     f,F,Fr = get_mc_expressions(estimator,XY,field_names=field_names)
-    return unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,xname=xname,yname=yname,xmask=xmask,ymask=ymask,groups=_get_groups(estimator,noise=False),physical_units=physical_units)
+    return unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,estimator,F,xname=xname,yname=yname,xmask=xmask,ymask=ymask,groups=_get_groups(estimator,noise=False),physical_units=physical_units)
 
 
 def reconstruct(shape,wcs,feed_dict,estimator=None,XY=None,
