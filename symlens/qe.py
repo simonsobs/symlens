@@ -755,7 +755,7 @@ def N_l_from_A_l_optimal(shape,wcs,estimator,Al):
     modlmap = enmap.modlmap(shape,wcs)
     if estimator == 'rot':
         return Al
-    elif:
+    else:
         return Al * modlmap*(modlmap+1.)/4.    
 
 def N_l_optimal(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None,kmask=None):
