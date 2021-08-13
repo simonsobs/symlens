@@ -627,8 +627,6 @@ def N_l(shape,wcs,feed_dict,estimator,XY,
                             falpha=falpha,fbeta=falpha,Aalpha=Al,Abeta=Al,
                             groups=_get_groups(estimator),kmask=kmask,power_name=power_name)
 
-def test():
-    print('Hello')
     
 def A_l_custom(shape,wcs,feed_dict,estimator,f,F,xmask=None,ymask=None,groups=None,kmask=None):
     """
