@@ -30,10 +30,11 @@ def _get_groups(e1,e2=None,noise=True):
         return None
     
 class HardenedTT(object):
-    def __init__(self,shape,wcs,feed_dict,xmask=None,ymask=None,kmask=None,Al=None,hardening='src',estimator='hu_ok'):
+    def __init__(self,shape,wcs,feed_dict,xmask=None,ymask=None,kmask=None,Al=None,hardening='src',estimator='hu_ok',
+                 target='phi'):
         h = hardening
         #van Engelen commented this out - strings starting with 'f' are "formatted string literals" and only work in python>=3.6, see https://docs.python.org/3/reference/lexical_analysis.html#f-strings
-        f_bias,F_bias,_ = get_mc_expressions(hardening,'TT')
+        f_bias,F_bias,_ = get_mc_expressions('hu_ok' if hardening == 'phi' else hardening,'TT')
         f_phi,F_phi,_ = get_mc_expressions(estimator,'TT')
         # f_bh,F_bh,_ = get_mc_expressions(f'{h}-hardened','TT',estimator_to_harden=estimator)
         f_bh,F_bh,_ = get_mc_expressions('%s-hardened' % h,'TT',estimator_to_harden=estimator)
@@ -41,8 +42,8 @@ class HardenedTT(object):
         self.fdict = feed_dict
         # 1 / Response of the biasing agent to the biasing agent
         self.fdict['A%s_%s_L' % (h, h)] = A_l_custom(shape,wcs,feed_dict,f_bias,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
-        # 1 / Response of the biasing agent to CMB lensing
-        self.fdict['Aphi_%s_L' % h] = A_l_custom(shape,wcs,feed_dict,f_phi,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        # 1 / Response of the biasing agent to CMB lensing (or other target)
+        self.fdict['A%s_%s_L' % (target, h)] = A_l_custom(shape,wcs,feed_dict,f_phi,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
         self.Al = A_l_custom(shape,wcs,feed_dict,f_bh,F_bh,xmask=xmask,ymask=ymask,groups=None,kmask=kmask) if Al is None else Al
         self.F_bh = F_bh
         self.xmask = xmask
@@ -1271,6 +1272,10 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         F = f / t1(XY) / t2(XY) / 2
         fr = f
         Fr = F
+    # elif estimator=='mod':
+    #     #alex adding this to test
+    #     assert XY=="TT", "BH only implemented for TT."
+
     elif estimator=='src-hardened':
         """ Osborne et. al. point source hardening
         This gives you the MC expressions for the source
@@ -1315,6 +1320,20 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         F = f / t1(XY) / t2(XY) / 2
         fr = f
         Fr = F
+    elif estimator=='phi-hardened':
+        #An estimator to harden lensing out of the mask estimator (as
+        #opposed to the converse in the 'mask-hardened' case above
+        assert XY=="TT", "BH only implemented for TT."
+        #for now thi is only implemented for hte 'mask' estimator, but I think this assertion could be dropped.-AvE
+        assert estimator_to_harden == 'mask'
+        f_msk,F_msk,_ = get_mc_expressions(estimator_to_harden,XY,field_names=field_names)
+        f_phi,_,_ = get_mc_expressions('hu_ok',XY,field_names=field_names)
+        A_phi_phi = e('Aphi_phi_L')
+        A_msk_phi = e('Amask_phi_L')
+        f = f_msk - A_phi_phi / A_msk_phi * f_phi
+        F = f / t1(XY) / t2(XY) / 2
+        fr = f
+        Fr = F
     elif estimator=='rot':  # Yadav et. al. 2009
         f = rotation_response_f(XY,rev=False)
         fr = rotation_response_f(XY,rev=True)
@@ -1327,5 +1346,7 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         elif XY=='TE':
             F = (t1('EE')*t2('TT')*f - t1('TE')*t2('TE')*fr)/(t1('TT')*t2('EE')*t1('EE')*t2('TT'))
             Fr = (t2('EE')*t1('TT')*fr - t2('TE')*t1('TE')*f)/(t2('TT')*t1('EE')*t2('EE')*t1('TT'))
+    else:
+        raise ValueError("Estimator %s is not recognized" % estimator)
 
     return f,F,Fr

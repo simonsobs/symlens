@@ -58,18 +58,19 @@ pl.add(ells,clkk,color='k')
 pl.add(cents,nl1d,ls='--')
 pl.add(cents,nlbh1d,ls=':')
 pl._ax.set_ylim(1e-8,5e-4)
-pl.done('bh.png')
+pl.done('../output/bh.png')
 
 
 pl = io.Plotter('rCL',xyscale='linlin')
 pl.add(cents,nlbh1d/nl1d)
 pl.hline(y=1)
-pl.done('bhdiff.png')
+pl.done('../output/bhdiff.png')
 
+print('hi')
 cents, ALsrc1d = binner.bin(h.fdict['Asrc_src_L'] )
 pl = io.Plotter('CL',xyscale='linlog')
-pl.add(cents,ALsrc1d)
+pl.add(cents,ALsrc1d / cents**2)
 # pl.hline(y=1)
-pl.done('A_L_src.png')
+pl.done('../output/A_L_src.png')
 
 
