@@ -489,7 +489,7 @@ def RDN0_analytic_generic(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
     dCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1,'d') + "_l2")
     Dexpr1 = dCac_l1*tCbd_l2 + tCac_l1*dCbd_l2 - tCac_l1*tCbd_l2
     Dexpr2 = dCad_l1*tCbc_l2 + tCad_l1*dCbc_l2 - tCad_l1*tCbc_l2
-    gint = generic_cross_integral(shape,wcs,feed_dict,alpha_XY,alpha_XY,Falpha,Fbeta,Fbeta_rev,Dexpr1,Dexpr2,
+    gint = generic_cross_integral(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,Dexpr1,Dexpr2,
                                   xmask=xmask,ymask=ymask,
                                   field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,groups=groups)
     return generic_noise_expression(gint,shape,wcs,feed_dict,falpha,fbeta,Falpha,Fbeta, \
@@ -628,7 +628,7 @@ def N_l(shape,wcs,feed_dict,estimator,XY,
                             groups=_get_groups(estimator),kmask=kmask,power_name=power_name)
 
     
-def A_l_custom(shape,wcs,feed_dict,estimator,f,F,xmask=None,ymask=None,groups=None,kmask=None):
+def A_l_custom(shape,wcs,feed_dict,f,F,estimator=None,xmask=None,ymask=None,groups=None,kmask=None):
     """
     Returns the 2D normalization corresponding to a custom
     mode-coupling estimator.
@@ -747,9 +747,9 @@ def A_l(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_names=None,
     """
     
     f,F,Fr = get_mc_expressions(estimator,XY,field_names=field_names)
-    return A_l_custom(shape,wcs,feed_dict,estimator,f,F,xmask=xmask,ymask=ymask,groups=_get_groups(estimator),kmask=kmask)
+    return A_l_custom(shape,wcs,feed_dict,f,F,estimator=estimator,xmask=xmask,ymask=ymask,groups=_get_groups(estimator),kmask=kmask)
 
-def N_l_from_A_l_optimal(shape,wcs,estimator,Al):
+def N_l_from_A_l_optimal(shape,wcs,Al,estimator=None):
     modlmap = enmap.modlmap(shape,wcs)
     if estimator == 'rot':
         return Al
@@ -805,7 +805,7 @@ def N_l_optimal(shape,wcs,feed_dict,estimator,XY,xmask=None,ymask=None,field_nam
     
     Al = A_l(shape,wcs,feed_dict,estimator,XY,xmask,ymask,field_names=field_names,kmask=kmask)
     modlmap = enmap.modlmap(shape,wcs)
-    return N_l_from_A_l_optimal(shape,wcs,estimator,Al)
+    return N_l_from_A_l_optimal(shape,wcs,Al,estimator=estimator)
 
 def N_l_optimal_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=None):
     """
@@ -862,8 +862,7 @@ def N_l_optimal_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None
     Al = A_l_custom(shape,wcs,feed_dict,f,F,xmask,ymask,groups=groups,kmask=kmask)
     return N_l_from_A_l_optimal(shape,wcs,Al)
 
-def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict, estimator, F,xname='X_l1',yname='Y_l2',
-                                            xmask=None,ymask=None,groups=None,physical_units=True):
+def unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,estimator=None,xname='X_l1',yname='Y_l2',xmask=None,ymask=None,groups=None,physical_units=True):
     """
     Returns a normalized reconstruction corresponding to a custom
     mode-coupling estimator.
@@ -985,7 +984,7 @@ def unnormalized_quadratic_estimator(shape,wcs,feed_dict,estimator,XY,
 
     
     f,F,Fr = get_mc_expressions(estimator,XY,field_names=field_names)
-    return unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,estimator,F,xname=xname,yname=yname,xmask=xmask,ymask=ymask,groups=_get_groups(estimator,noise=False),physical_units=physical_units)
+    return unnormalized_quadratic_estimator_custom(shape,wcs,feed_dict,F,estimator=estimator,xname=xname,yname=yname,xmask=xmask,ymask=ymask,groups=_get_groups(estimator,noise=False),physical_units=physical_units)
 
 
 def reconstruct(shape,wcs,feed_dict,estimator=None,XY=None,
