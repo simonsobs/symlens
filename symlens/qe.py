@@ -489,7 +489,7 @@ def RDN0_analytic_generic(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbet
     dCbc_l2 = e(cross_names(b,c,fnalpha2,fnbeta1,'d') + "_l2")
     Dexpr1 = dCac_l1*tCbd_l2 + tCac_l1*dCbd_l2 - tCac_l1*tCbd_l2
     Dexpr2 = dCad_l1*tCbc_l2 + tCad_l1*dCbc_l2 - tCad_l1*tCbc_l2
-    gint = generic_cross_integral(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,Dexpr1,Dexpr2,
+    gint = generic_cross_integral(shape,wcs,feed_dict,alpha_XY,alpha_XY,Falpha,Fbeta,Fbeta_rev,Dexpr1,Dexpr2,
                                   xmask=xmask,ymask=ymask,
                                   field_names_alpha=field_names_alpha,field_names_beta=field_names_beta,groups=groups)
     return generic_noise_expression(gint,shape,wcs,feed_dict,falpha,fbeta,Falpha,Fbeta, \
