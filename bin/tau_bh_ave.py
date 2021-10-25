@@ -74,6 +74,8 @@ print(feed_dict.keys())
 A_L_mask_predef = qe.A_l(shape, wcs, feed_dict, 'mask', 'TT', xmask=xmask,ymask=ymask)
 print( feed_dict.keys())
 
+# import pdb
+# pdb.set_trace()
 A_L_tau_predef = qe.A_l(shape, wcs, feed_dict, 'tau', 'TT', xmask=xmask,ymask=ymask)
 print( feed_dict.keys())
 
@@ -95,6 +97,7 @@ h_phi_maskbh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=k
                             Al=None,estimator='hu_ok', hardening='mask')
 
 
+
 # N_l = qe.N_l_optimal(shape,wcs,feed_dict,'hu_ok','TT',xmask=lxmask,ymask=lymask,field_names=None,kmask=kmask)
 N_l_mask = qe.N_l_optimal(shape,wcs,feed_dict,'mask','TT',xmask=xmask,ymask=ymask,field_names=None,kmask=kmask)
 
@@ -107,10 +110,16 @@ print('check, ', feed_dict.keys())
 
 h_mask_phibh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
                             Al=None,estimator='mask', hardening='phi', target = 'mask')
+
 h_tau_phibh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
-                            Al=None,estimator='mask', hardening='phi', target = 'tau')
+                            Al=None,estimator='tau', hardening='phi', target = 'tau')
+
+if False:
+    h_tau_phibh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
+                                Al=None,estimator='mask', hardening='phi', target = 'tau')
 
 N_l_mask_phibh = h_mask_phibh.get_Nl()
+N_l_tau_phibh = h_tau_phibh.get_Nl()
 
 
 
@@ -144,6 +153,7 @@ cents, N_L_mask_1d = binner.bin(N_l_mask)
 cents, N_L_tau_1d = binner.bin(N_l_tau)
 
 cents, N_L_mask_phibh_1d = binner.bin(N_l_mask_phibh)
+cents, N_L_tau_phibh_1d = binner.bin(N_l_tau_phibh)
 
 
 pl = io.Plotter('CL',xyscale='loglog')
@@ -161,6 +171,7 @@ pl.add(cents,A_L_tau_predef_1d , label = 'A_L_tau_predef_1d', color = 'b', ls = 
 pl.add(cents,A_L_mask_predef_1d, label = 'A_L_mask_predef_1d', color = 'r', ls = 'dashed')
 
 pl.add(cents,N_L_tau_1d * 4 / cents**2, label = 'N_L_tau_1d' , color = 'b', ls = 'dashdot')
+pl.add(cents,N_L_tau_phibh_1d * 4 / cents**2, label = 'N_L_tau_phibh_1d' , color = 'b', ls = 'dotted')
 
 pl.add(cents,N_L_mask_1d * 4 / cents**2, label = 'N_L_mask_1d', color = 'r', ls = 'dashdot')
 pl.add(cents,N_L_mask_phibh_1d * 4 / cents**2, label = 'N_L_mask_phibh_1d', color = 'r',

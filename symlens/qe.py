@@ -1169,6 +1169,61 @@ def rotation_response_f(XY,rev=False):
         raise ValueError
     return f
 
+    
+def mod_response_f(XY,rev=False):
+
+    """
+    Returns the mode-coupling response f(l1,l2) for CMB modulation.
+    Uses the positive sign convention of, e.g., Table II of Su++
+    0901.0285 -- this is the opposite of that of the mask case of Namikawa++ 1310.2372
+    (who define the mask with an extra minus sign).
+
+    Note that for a tau reconstruction (Dvorkin & Smith) one needs the
+    negative of this.
+
+    Parameters
+    ----------
+
+    XY: str
+        The XY pair for the requested estimator. This must belong to one
+        of TT, EE, TE, ET, EB or TB.
+    rev: boolean, optional
+        Whether to swap l1 and l2. Defaults to False.
+
+    Returns
+    -------
+
+    f : :obj:`sympy.core.symbol.Symbol` , optional
+        A sympy expression containing the mode-coupling response. See the Usage guide
+        for details.
+
+    """
+    
+    # cLdl1 = Lxl1 if curl else Ldl1
+    # cLdl2 = Lxl2 if curl else Ldl2
+    
+    # iLdl1 = cLdl2 if rev else cLdl1
+    # iLdl2 = cLdl1 if rev else cLdl2
+    def iu1(ab): return u2(ab) if rev else u1(ab)
+    def iu2(ab): return u1(ab) if rev else u2(ab)
+    if XY=='TT':
+        f = iu1('TT')+iu2('TT')
+    elif XY=='TE':
+        f = cos2t12*iu1('TE')+iu2('TE')
+    elif XY=='ET':
+        f = iu2('TE')*cos2t12+iu1('TE')
+    elif XY=='TB':
+        f = iu1('TE')*sin2t12
+    elif XY=='EE':
+        f = (iu1('EE')+iu2('EE'))*cos2t12
+    elif XY=='EB':
+        f = iu1('EE')*sin2t12
+    else:
+        print(XY)
+        raise ValueError
+    return f
+
+
 def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'):
     """
     Pre-defined mode coupling expressions.
@@ -1272,9 +1327,6 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         F = f / t1(XY) / t2(XY) / 2
         fr = f
         Fr = F
-    # elif estimator=='mod':
-    #     #alex adding this to test
-    #     assert XY=="TT", "BH only implemented for TT."
 
     elif estimator=='src-hardened':
         """ Osborne et. al. point source hardening
@@ -1297,11 +1349,21 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         fr = f
         Fr = F
     elif estimator=='mask': # Namikawa et. al. mask bias hardening
+        assert XY == "TT", "BH only implemented for TT."
         f = - t1('TT') - t2('TT')
         fr = f
         F = f / t1(XY) / t2(XY) / 2
         fr = f
         Fr = F
+    # elif estimator=='tau': # Patchy tau
+
+
+        # remnants from some earlier testing for the TT case  - AvE.
+        # f = + u1('TT') + u2('TT')
+        # fr = f
+        # F = f / t1(XY) / t2(XY) / 2
+        # fr = f
+        # Fr = F
     elif estimator=='mask-hardened':
         """ Namikawa et. al. mask hardening
         This gives you the MC expressions for the mask
@@ -1325,19 +1387,28 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         #opposed to the converse in the 'mask-hardened' case above
         assert XY=="TT", "BH only implemented for TT."
         #for now thi is only implemented for hte 'mask' estimator, but I think this assertion could be dropped.-AvE
-        assert estimator_to_harden == 'mask'
-        f_msk,F_msk,_ = get_mc_expressions(estimator_to_harden,XY,field_names=field_names)
+        assert (estimator_to_harden == 'mask' or estimator_to_harden == 'tau')
+        f_eth,F_eth,_ = get_mc_expressions(estimator_to_harden,XY,field_names=field_names)
         f_phi,_,_ = get_mc_expressions('hu_ok',XY,field_names=field_names)
         A_phi_phi = e('Aphi_phi_L')
-        A_msk_phi = e('Amask_phi_L')
-        f = f_msk - A_phi_phi / A_msk_phi * f_phi
+        A_eth_phi = e('A%s_phi_L' % estimator_to_harden)
+        f = f_eth - A_phi_phi / A_eth_phi * f_phi
         F = f / t1(XY) / t2(XY) / 2
         fr = f
         Fr = F
-    elif estimator=='rot':  # Yadav et. al. 2009
-        f = rotation_response_f(XY,rev=False)
-        fr = rotation_response_f(XY,rev=True)
-        if XY in ['EE','BB']:
+    elif (estimator=='rot' or estimator == 'tau'):  # Yadav et. al. 2009
+        if estimator == 'rot':
+            f = rotation_response_f(XY,rev=False)
+            fr = rotation_response_f(XY,rev=True)
+        elif estimator == 'tau':
+            #the minus sign is here because the modulation response is
+            #defined for a field that acts like X_mod = (1 + a)X_primordial.  Tau (optical depth)has opposite sign 
+            f = -mod_response_f(XY,rev=False)
+            fr = -mod_response_f(XY,rev=True)
+
+        if XY in ['TT', 'EE','BB']: #note that XY=='TT' doesn't make
+                                    #sense for estimator=='rot', but
+                                    #this is included for the 'tau' case.
             F = f / 2 / t1(XY) / t2(XY)
             Fr = fr / 2 / t2(XY) / t1(XY)
         elif XY in ['TB','EB']:
