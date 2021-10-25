@@ -55,7 +55,9 @@ expr1_tau = f_tau * F_tau
 
 feed_dict = {}
 feed_dict['uC_T_T'] = theory.uCl('TT',modlmap)
-feed_dict['tC_T_T'] = theory.lCl('TT',modlmap) + (noise_level*np.pi/180/60)**2./maps.gauss_beam(modlmap,1.4)**2.
+# feed_dict['tC_T_T'] = theory.lCl('TT',modlmap) + (noise_level*np.pi/180/60)**2./maps.gauss_beam(modlmap,1.4)**2.
+feed_dict['tC_T_T'] = theory.lCl('TT',modlmap) + (noise_level*np.pi/180/60)**2.
+
 feed_dict['pc_T_T'] = 1
 
 
@@ -71,11 +73,16 @@ A_L_tau = qe.A_l_custom(shape, wcs, feed_dict, f_tau, F_tau, xmask=xmask, ymask=
 print(feed_dict.keys())
 A_L_mask_predef = qe.A_l(shape, wcs, feed_dict, 'mask', 'TT', xmask=xmask,ymask=ymask)
 print( feed_dict.keys())
+
+A_L_tau_predef = qe.A_l(shape, wcs, feed_dict, 'tau', 'TT', xmask=xmask,ymask=ymask)
+print( feed_dict.keys())
+
+
 # my_qe_phi = qe.QE(shape, wcs, feed_dict, 'hu_ok', XY = 'TT', 
 #                   f = f_phi, F = F_phi, xmask = xmask, ymask = ymask)
 
 
-N_l_phi = qe.N_l_optimal(shape,wcs,feed_dict,'hu_ok','TT',xmask=lxmask,ymask=lymask,field_names=None,kmask=kmask)
+N_l_phi = qe.N_l_optimal(shape,wcs,feed_dict,'hu_ok','TT',xmask=xmask,ymask=ymask,field_names=None,kmask=kmask)
 print (feed_dict.keys())
 
 
@@ -84,18 +91,24 @@ h_phi_srcbh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=km
 N_l_phi_srcbh = h_phi_srcbh.get_Nl()
 print (feed_dict.keys())
 
-h_phi_taubh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
+h_phi_maskbh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
                             Al=None,estimator='hu_ok', hardening='mask')
 
 
 # N_l = qe.N_l_optimal(shape,wcs,feed_dict,'hu_ok','TT',xmask=lxmask,ymask=lymask,field_names=None,kmask=kmask)
-N_l_mask = qe.N_l_optimal(shape,wcs,feed_dict,'mask','TT',xmask=lxmask,ymask=lymask,field_names=None,kmask=kmask)
+N_l_mask = qe.N_l_optimal(shape,wcs,feed_dict,'mask','TT',xmask=xmask,ymask=ymask,field_names=None,kmask=kmask)
+
+N_l_tau = qe.N_l_optimal(shape,wcs,feed_dict,'tau','TT',xmask=xmask,ymask=ymask,field_names=None,kmask=kmask)
+
 
 print('check, ', feed_dict.keys())
 
 
+
 h_mask_phibh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
                             Al=None,estimator='mask', hardening='phi', target = 'mask')
+h_tau_phibh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
+                            Al=None,estimator='mask', hardening='phi', target = 'tau')
 
 N_l_mask_phibh = h_mask_phibh.get_Nl()
 
@@ -116,13 +129,22 @@ cents, A_L_phi_1d = binner.bin(A_L_phi )
 cents, A_L_phi_predef_1d = binner.bin(A_L_phi_predef)
 
 cents, A_L_tau_1d = binner.bin(A_L_tau)
+
 cents, A_L_mask_predef_1d = binner.bin(A_L_mask_predef)
+
+cents, A_L_tau_predef_1d = binner.bin(A_L_tau_predef)
+
+cents, A_L_mask_predef_1d = binner.bin(A_L_mask_predef)
+
 
 cents, N_L_phi_1d = binner.bin(N_l_phi)
 cents, N_L_phi_srcbh_1d = binner.bin(N_l_phi_srcbh)
 
 cents, N_L_mask_1d = binner.bin(N_l_mask)
+cents, N_L_tau_1d = binner.bin(N_l_tau)
+
 cents, N_L_mask_phibh_1d = binner.bin(N_l_mask_phibh)
+
 
 pl = io.Plotter('CL',xyscale='loglog')
 pl.add(cents,A_L_phi_1d * cents**2)
@@ -133,10 +155,16 @@ pl.done('../output/A_L_phi.png')
 
 
 pl = io.Plotter('L',xyscale='loglog')
-# pl.add(cents,A_L_tau_1d , label = 'A_L_tau_1d')
-# pl.add(cents,A_L_mask_predef_1d, label = 'A_L_mask_predef_1d')
-pl.add(cents,N_L_mask_1d * 4 / cents**2, label = 'N_L_mask_1d')
-pl.add(cents,N_L_mask_phibh_1d * 4 / cents**2, label = 'N_L_mask_phibh_1d', ls = '--')
+pl.add(cents,A_L_tau_1d , label = 'A_L_tau_1d', color = 'b')
+pl.add(cents,A_L_tau_predef_1d , label = 'A_L_tau_predef_1d', color = 'b', ls = 'dashed')
+
+pl.add(cents,A_L_mask_predef_1d, label = 'A_L_mask_predef_1d', color = 'r', ls = 'dashed')
+
+pl.add(cents,N_L_tau_1d * 4 / cents**2, label = 'N_L_tau_1d' , color = 'b', ls = 'dashdot')
+
+pl.add(cents,N_L_mask_1d * 4 / cents**2, label = 'N_L_mask_1d', color = 'r', ls = 'dashdot')
+pl.add(cents,N_L_mask_phibh_1d * 4 / cents**2, label = 'N_L_mask_phibh_1d', color = 'r',
+       ls = 'dotted')
 
 
 pl.legend(loc = 'best')
