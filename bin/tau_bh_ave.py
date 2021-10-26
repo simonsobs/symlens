@@ -40,7 +40,7 @@ ells = np.arange(20,Lmax,1)
 binner = stats.bin2D(modlmap,bin_edges)
 clkk = theory.gCl('kk',ells)
 
-
+XY = 'TT'
 kmask = maps.mask_kspace(shape,wcs,lmin=20,lmax=Lmax)
 
 f_phi = s.Ldl1 * s.e('uC_T_T_l1') + s.Ldl2 * s.e('uC_T_T_l2')
@@ -55,8 +55,7 @@ expr1_tau = f_tau * F_tau
 
 feed_dict = {}
 feed_dict['uC_T_T'] = theory.uCl('TT',modlmap)
-# feed_dict['tC_T_T'] = theory.lCl('TT',modlmap) + (noise_level*np.pi/180/60)**2./maps.gauss_beam(modlmap,1.4)**2.
-feed_dict['tC_T_T'] = theory.lCl('TT',modlmap) + (noise_level*np.pi/180/60)**2.
+feed_dict['tC_T_T'] = theory.lCl('TT',modlmap) + (noise_level*np.pi/180/60)**2./maps.gauss_beam(modlmap,1.4)**2.
 
 feed_dict['pc_T_T'] = 1
 
@@ -88,13 +87,13 @@ N_l_phi = qe.N_l_optimal(shape,wcs,feed_dict,'hu_ok','TT',xmask=xmask,ymask=ymas
 print (feed_dict.keys())
 
 
-h_phi_srcbh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
-                            Al=None,estimator=estimator,hardening=hardening)
+h_phi_srcbh = qe.HardenedXY(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
+                            Al=None,estimator=estimator,hardening=hardening, XY=XY)
 N_l_phi_srcbh = h_phi_srcbh.get_Nl()
 print (feed_dict.keys())
 
-h_phi_maskbh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
-                            Al=None,estimator='hu_ok', hardening='mask')
+h_phi_maskbh = qe.HardenedXY(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
+                             Al=None,estimator='hu_ok', hardening='mask', XY=XY)
 
 
 
@@ -108,15 +107,13 @@ print('check, ', feed_dict.keys())
 
 
 
-h_mask_phibh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
-                            Al=None,estimator='mask', hardening='phi', target = 'mask')
+h_mask_phibh = qe.HardenedXY(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
+                             Al=None,estimator='mask', hardening='phi', target = 'mask',XY=XY)
 
-h_tau_phibh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
-                            Al=None,estimator='tau', hardening='phi', target = 'tau')
+h_tau_phibh = qe.HardenedXY(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
+                            Al=None,estimator='tau', hardening='phi', target = 'tau',XY=XY)
 
-if False:
-    h_tau_phibh = qe.HardenedTT(shape,wcs,feed_dict,xmask=xmask,ymask=ymask,kmask=kmask,
-                                Al=None,estimator='mask', hardening='phi', target = 'tau')
+
 
 N_l_mask_phibh = h_mask_phibh.get_Nl()
 N_l_tau_phibh = h_tau_phibh.get_Nl()

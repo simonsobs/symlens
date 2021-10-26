@@ -29,6 +29,9 @@ def _get_groups(e1,e2=None,noise=True):
     else:
         return None
     
+
+        
+
 class HardenedTT(object):
     def __init__(self,shape,wcs,feed_dict,xmask=None,ymask=None,kmask=None,Al=None,hardening='src',estimator='hu_ok',
                  target='phi'):
@@ -52,6 +55,41 @@ class HardenedTT(object):
         self.shape,self.wcs = shape,wcs
     def get_Nl(self):
         return N_l_cross_custom(self.shape,self.wcs,self.fdict,"TT","TT",self.F_bh,self.F_bh,self.F_bh,
+                                     xmask=self.xmask,ymask=self.ymask,
+                                     Aalpha=self.Al,Abeta=self.Al,groups=None,kmask=self.kmask)
+    def reconstruct(self,feed_dict,xname='X_l1',yname='Y_l2',groups=None,physical_units=True):
+        uqe = unnormalized_quadratic_estimator_custom(self.shape,self.wcs,feed_dict,
+                                                      self.F_bh,xname=xname,yname=yname,
+                                                      xmask=self.xmask,ymask=self.ymask,
+                                                      groups=groups,physical_units=physical_units)
+        return self.Al * uqe * self.kmask
+        
+        
+#Ideally the HardenedTT could be a subclass of this
+class HardenedXY(object):
+    def __init__(self,shape,wcs,feed_dict,xmask=None,ymask=None,kmask=None,Al=None,hardening='src',estimator='hu_ok',
+                 target='phi',XY='TT'):
+        h = hardening
+        #van Engelen commented this out - strings starting with 'f' are "formatted string literals" and only work in python>=3.6, see https://docs.python.org/3/reference/lexical_analysis.html#f-strings
+        f_bias,F_bias,_ = get_mc_expressions('hu_ok' if hardening == 'phi' else hardening,XY)
+        f_phi,F_phi,_ = get_mc_expressions(estimator,XY)
+        # f_bh,F_bh,_ = get_mc_expressions(f'{h}-hardened','TT',estimator_to_harden=estimator)
+        f_bh,F_bh,_ = get_mc_expressions('%s-hardened' % h,XY,estimator_to_harden=estimator)
+
+        self.fdict = feed_dict
+        # 1 / Response of the biasing agent to the biasing agent
+        self.fdict['A%s_%s_L' % (h, h)] = A_l_custom(shape,wcs,feed_dict,f_bias,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        # 1 / Response of the biasing agent to CMB lensing (or other target)
+        self.fdict['A%s_%s_L' % (target, h)] = A_l_custom(shape,wcs,feed_dict,f_phi,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        self.Al = A_l_custom(shape,wcs,feed_dict,f_bh,F_bh,xmask=xmask,ymask=ymask,groups=None,kmask=kmask) if Al is None else Al
+        self.F_bh = F_bh
+        self.xmask = xmask
+        self.ymask = ymask
+        self.kmask = kmask
+        self.shape,self.wcs = shape,wcs
+        self.XY = XY
+    def get_Nl(self):
+        return N_l_cross_custom(self.shape,self.wcs,self.fdict,self.XY,self.XY,self.F_bh,self.F_bh,self.F_bh,
                                      xmask=self.xmask,ymask=self.ymask,
                                      Aalpha=self.Al,Abeta=self.Al,groups=None,kmask=self.kmask)
     def reconstruct(self,feed_dict,xname='X_l1',yname='Y_l2',groups=None,physical_units=True):
