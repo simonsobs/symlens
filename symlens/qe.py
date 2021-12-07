@@ -1256,7 +1256,7 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
 
     elif estimator=='shear': # Schaan, Ferraro 2018
         assert XY=="TT", "Shear estimator only implemented for TT."
-        f = cLdl2*u2('TT')
+        f = cLdl2*u2('TT') + cLdl1*u1('TT')
         fr = cLdl1*u1('TT')
         cos2theta = ((2*(cLdl1)**2)/L**2/l1**2) - 1
         cos2theta_rev = ((2*(cLdl2)**2)/L**2/l2**2) - 1
