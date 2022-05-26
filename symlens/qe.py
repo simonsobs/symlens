@@ -1165,6 +1165,8 @@ def lensing_response_f(XY,rev=False,curl=False):
         raise ValueError
     return f
 
+def f2kernel_response_f(XY,rev=False):
+    FILLME
 
 def rotation_response_f(XY,rev=False):
 
@@ -1482,5 +1484,10 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
             Fr = (t2('EE')*t1('TT')*fr - t2('TE')*t1('TE')*f)/(t2('TT')*t1('EE')*t2('EE')*t1('TT'))
     else:
         raise ValueError("Estimator %s is not recognized" % estimator)
+
+    elif (estimator=='f2kernel'):
+        
+        f = f2kernel_reseponse_f(XY)
+
 
     return f,F,Fr
