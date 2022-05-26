@@ -65,7 +65,7 @@ class HardenedTT(object):
         return self.Al * uqe * self.kmask
         
         
-#Ideally the HardenedTT could be a subclass of this
+#This is for general bias hardening (not just TT).  Ideally the HardenedTT could be redefined (a subclass of this perhaps?)
 class HardenedXY(object):
     def __init__(self,shape,wcs,feed_dict,xmask=None,ymask=None,kmask=None,Al=None,hardening='src',estimator='hu_ok',
                  target='phi',XY='TT'):
@@ -383,9 +383,9 @@ def generic_cross_integral(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbe
     return integral
 
 def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
-                      xmask=None,ymask=None,
-                      field_names_alpha=None,field_names_beta=None,
-                      falpha=None,fbeta=None,Aalpha=None,Abeta=None,
+                     xmask=None,ymask=None,
+                     field_names_alpha=None,field_names_beta=None,
+                     falpha=None,fbeta=None,Aalpha=None,Abeta=None,
                      groups=None,kmask=None,power_name="t"):
     """
     Returns the 2D cross-covariance between two custom mode-coupling estimators. 
@@ -1216,6 +1216,10 @@ def mod_response_f(XY,rev=False):
     0901.0285 -- this is the opposite of that of the mask case of Namikawa++ 1310.2372
     (who define the mask with an extra minus sign).
 
+    This is the same as CMB lensing, defined above in
+    'lensing_response_f', but with the 'iLdl1' and 'iLdl2' factors set
+    to unity.
+
     Note that for a tau reconstruction (Dvorkin & Smith) one needs the
     negative of this.
 
@@ -1394,9 +1398,7 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         fr = f
         Fr = F
     # elif estimator=='tau': # Patchy tau
-
-
-        # remnants from some earlier testing for the TT case  - AvE.
+        # remnants from some earlier testing for the TT case  - AvE.  
         # f = + u1('TT') + u2('TT')
         # fr = f
         # F = f / t1(XY) / t2(XY) / 2
@@ -1423,24 +1425,47 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
     elif estimator=='phi-hardened':
         #An estimator to harden lensing out of the mask estimator (as
         #opposed to the converse in the 'mask-hardened' case above
-        assert XY=="TT", "BH only implemented for TT."
-        #for now thi is only implemented for hte 'mask' estimator, but I think this assertion could be dropped.-AvE
+
+        # Seems to work for TT, trying this for polarization
+        # assert XY=="TT", "BH only implemented for TT."
         assert (estimator_to_harden == 'mask' or estimator_to_harden == 'tau')
-        f_eth,F_eth,_ = get_mc_expressions(estimator_to_harden,XY,field_names=field_names)
-        f_phi,_,_ = get_mc_expressions('hu_ok',XY,field_names=field_names)
+        f_eth,F_eth,F_eth_r = get_mc_expressions(estimator_to_harden,XY,field_names=field_names)
+        f_phi,_,F_phi_r = get_mc_expressions('hu_ok',XY,field_names=field_names)
         A_phi_phi = e('Aphi_phi_L')
         A_eth_phi = e('A%s_phi_L' % estimator_to_harden)
         f = f_eth - A_phi_phi / A_eth_phi * f_phi
-        F = f / t1(XY) / t2(XY) / 2
-        fr = f
-        Fr = F
-    elif (estimator=='rot' or estimator == 'tau'):  # Yadav et. al. 2009
-        if estimator == 'rot':
+        # import pdb
+        # pdb.set_trace()
+        if X == Y:
+            fr = f
+        else:
+            fr = sympy.nan
+            print('warning, reversing l1 <-> l2 not implemented for bias hardening -- the reversed mode coupling function has been set to NaN')
+
+        # F = f / t1(XY) / t2(XY) / 2
+        # fr = f
+        # Fr = F
+        #AvE added this for non-TT bias hardening.
+        if XY in ['TT', 'EE','BB']: #note that XY=='TT' doesn't make
+                                    #sense for estimator=='rot', but
+                                    #this is included for the 'tau' case.
+            F = f / 2 / t1(XY) / t2(XY)
+            Fr = fr / 2 / t2(XY) / t1(XY)
+        elif XY in ['TB','EB']:
+            F = f / t1(XX) / t2(YY)
+            Fr = fr / t2(XX) / t1(YY)
+        elif XY=='TE':
+            F = (t1('EE')*t2('TT')*f - t1('TE')*t2('TE')*fr)/(t1('TT')*t2('EE')*t1('EE')*t2('TT'))
+            Fr = (t2('EE')*t1('TT')*fr - t2('TE')*t1('TE')*f)/(t2('TT')*t1('EE')*t2('EE')*t1('TT'))
+
+    elif (estimator=='rot' or estimator == 'tau'):  
+        if estimator == 'rot': # Yadav et. al. 2009
             f = rotation_response_f(XY,rev=False)
             fr = rotation_response_f(XY,rev=True)
         elif estimator == 'tau':
-            #the minus sign is here because the modulation response is
-            #defined for a field that acts like X_mod = (1 + a)X_primordial.  Tau (optical depth)has opposite sign 
+            #the minus sign is here because the modulation response in mod_response_f is
+            #defined for a field "a" that acts like X_mod = (1 + a)X_primordial.  
+            # Tau (optical depth)has opposite sign 
             f = -mod_response_f(XY,rev=False)
             fr = -mod_response_f(XY,rev=True)
 
