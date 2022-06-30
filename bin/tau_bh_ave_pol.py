@@ -174,27 +174,7 @@ for ii, XY in enumerate(XYs):
 
     np.savetxt('../output/nl_tau_%s_lmax%i.txt' % (XY, lmax), np.transpose([cents, N_L_tau_1d[XY], N_L_tau_phibh_1d[XY]]), 
                header = " ell, N_L_tau, N_L_tau_bh")
-stop
 
 
-pl = io.Plotter('CL',xyscale='loglog')
-pl.add(ells,clkk,color='k')
-pl.add(cents,N_L_phi_1d,ls='--')
-pl.add(cents,N_L_phi_srcbh_1d,ls=':')
-pl._ax.set_ylim(1e-8,5e-4)
-pl.done('../output/phi_bh.png')
-
-
-# pl = io.Plotter('rCL',xyscale='liN_Lin')
-# pl.add(cents,N_Lbh1d/N_L1d)
-# pl.hline(y=1)
-# pl.done('../output/bhdiff.png')
-
-
-cents, ALsrc1d = binner.bin(h_phi_srcbh.fdict['Asrc_src_L'] )
-pl = io.Plotter('CL',xyscale='linlog')
-pl.add(cents,ALsrc1d / cents**2)
-# pl.hline(y=1)
-pl.done('../output/A_L_src.png')
 
 

@@ -1165,8 +1165,19 @@ def lensing_response_f(XY,rev=False,curl=False):
         raise ValueError
     return f
 
-def f2kernel_response_f(XY,rev=False):
-    FILLME
+def f2kernel_delta_symmetric_response_f(XY,rev=False):
+    '''Equation @.4 of Foreman++ 1803.04975, with k_parallel = 0 
+    '''
+    term1 =  5 / 7 * e('clfg_l1') \
+           + 5 / 7 * e('clfg_l2') 
+    
+    term2 = -1 / 2 * Ldl1 * (1/l1**2 + 1/L**2) * e('clfg_l1')  \
+            -1 / 2 * Ldl1 * (1/l2**2 + 1/L**2) * e('c2fg_l2')  
+    
+    term3 = 2 / 7 * Ldl1**2 / (L**2 * l1**2) * e('clfg_l1')  \
+           +2 / 7 * Ldl1**2 / (L**2 * l2**2) * e('clfg_l2') 
+    
+    return term1 + term2 + term3
 
 def rotation_response_f(XY,rev=False):
 
@@ -1482,12 +1493,13 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         elif XY=='TE':
             F = (t1('EE')*t2('TT')*f - t1('TE')*t2('TE')*fr)/(t1('TT')*t2('EE')*t1('EE')*t2('TT'))
             Fr = (t2('EE')*t1('TT')*fr - t2('TE')*t1('TE')*f)/(t2('TT')*t1('EE')*t2('EE')*t1('TT'))
-    else:
-        raise ValueError("Estimator %s is not recognized" % estimator)
-
+    
     elif (estimator=='f2kernel'):
         
         f = f2kernel_reseponse_f(XY)
+
+    else:
+        raise ValueError("Estimator %s is not recognized" % estimator)
 
 
     return f,F,Fr
