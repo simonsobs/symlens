@@ -54,7 +54,6 @@ pl.add(ls,(cl_a-cl_d)/cl_d,label='ACT DR4+WMAP TT vs. default')
 pl.hline(y=0)
 pl._ax.set_ylim(-0.01,0.035)
 pl.done('clttdiff.png')
-sys.exit()
 
 
 
