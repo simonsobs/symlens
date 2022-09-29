@@ -55,13 +55,13 @@ pl.hline(y=0)
 pl._ax.set_ylim(-0.01,0.035)
 pl.done('clttdiff.png')
 
-
+filters = np.loadtxt("filters.txt")
 
 def Nl(exp=None):
 
     # ACTish noise
-    noise = 12.0
-    beam = 1.4
+    # noise = 12.0
+    # beam = 1.4
     
     feed_dict = {}
 
@@ -72,7 +72,14 @@ def Nl(exp=None):
         # or use TT Cls for response from a saved file
         feed_dict['rC_T_T'] = get_spec(exp)
     feed_dict['uC_T_T'] = get_spec('default')
-    feed_dict['tC_T_T'] = get_spec('default') + (noise*(np.pi/180./60.) / maps.gauss_beam(modlmap,beam))**2.
+    ttt = filters[0]
+    tte = filters[-1]
+    tee = filters[1]
+    tbb = filters[2]
+    fls = np.arange(ttt.size)
+    
+    #feed_dict['tC_T_T'] = get_spec('default') + (noise*(np.pi/180./60.) / maps.gauss_beam(modlmap,beam))**2.
+    feed_dict['tC_T_T'] = maps.interp(fls,ttt)(modlmap)
 
     # A_L
     Al2d = s.A_l_custom(shape,wcs,feed_dict,fresp,F,xmask=tmask,ymask=tmask,groups=None,kmask=kmask)
@@ -101,7 +108,7 @@ pl.add(cents,N1d_a,ls='-')
 pl.done('c_L_n_L.png')
 
 pl = io.Plotter('rCL',xyscale='loglin')
-pl.add(cents,2.*(N1d_p-N1d)/N1d,ls='--',label='Planck 2018 vs. default')
-pl.add(cents,2.*(N1d_a-N1d)/N1d,ls='--',label='ACT DR4+WMAP vs. default')
+pl.add(cents,(N1d_p**2-N1d**2)/N1d**2,ls='--',label='Planck 2018 vs. default')
+pl.add(cents,(N1d_a**2-N1d**2)/N1d**2,ls='--',label='ACT DR4+WMAP vs. default')
 pl.hline(y=0)
 pl.done('Cl_diff.png',dpi=250)
