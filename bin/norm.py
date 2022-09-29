@@ -32,10 +32,31 @@ F = ffilt / 2 / s.e('tC_T_T_l1') / s.e('tC_T_T_l2')
 
 theory = cosmology.default_theory()
 
-def get_spec(exp):
+def get_spec_1d(exp,lmax=None):
     ls,cltt = np.loadtxt(f'{exp}_cls.txt',usecols=[0,1],unpack=True)
     cltt[ls<2] = 0
+    if not(lmax is None):
+        cltt = cltt[ls<lmax]
+        ls = ls[ls<lmax]
+    return ls,cltt
+
+def get_spec(exp):
+    ls,cltt = get_spec_1d(exp)
     return maps.interp(ls,cltt)(modlmap)
+
+ls,cl_d = get_spec_1d('default',3000)
+ls,cl_p = get_spec_1d('planck',3000)
+ls,cl_a = get_spec_1d('act',3000)
+
+pl = io.Plotter('rCl')
+pl.add(ls,(cl_p-cl_d)/cl_d,label='Planck 2018 TT vs. default')
+pl.add(ls,(cl_a-cl_d)/cl_d,label='ACT DR4+WMAP TT vs. default')
+pl.hline(y=0)
+pl._ax.set_ylim(-0.01,0.035)
+pl.done('clttdiff.png')
+sys.exit()
+
+
 
 def Nl(exp=None):
 
@@ -81,7 +102,7 @@ pl.add(cents,N1d_a,ls='-')
 pl.done('c_L_n_L.png')
 
 pl = io.Plotter('rCL',xyscale='loglin')
-pl.add(cents,(N1d_p-N1d)/N1d,ls='--',label='Planck 2018 vs. default')
-pl.add(cents,(N1d_a-N1d)/N1d,ls='--',label='ACT DR4+WMAP vs. default')
+pl.add(cents,2.*(N1d_p-N1d)/N1d,ls='--',label='Planck 2018 vs. default')
+pl.add(cents,2.*(N1d_a-N1d)/N1d,ls='--',label='ACT DR4+WMAP vs. default')
 pl.hline(y=0)
-pl.done('Al_diff.png',dpi=250)
+pl.done('Cl_diff.png',dpi=250)
