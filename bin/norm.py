@@ -32,6 +32,11 @@ F = ffilt / 2 / s.e('tC_T_T_l1') / s.e('tC_T_T_l2')
 
 theory = cosmology.default_theory()
 
+def get_spec(exp):
+    ls,cltt = np.loadtxt(f'{exp}_cls.txt',usecols=[0,1],unpack=True)
+    cltt[ls<2] = 0
+    return maps.interp(ls,cltt)(modlmap)
+
 def Nl(exp=None):
 
     # ACTish noise
@@ -42,14 +47,12 @@ def Nl(exp=None):
 
     # Default to using same cosmology in response
     if exp is None:
-        feed_dict['rC_T_T'] = theory.lCl('TT',modlmap)
+        feed_dict['rC_T_T'] = get_spec('default')
     else:
         # or use TT Cls for response from a saved file
-        ls,cltt = np.loadtxt(f'{exp}_cls.txt',usecols=[0,1],unpack=True)
-        cltt[ls<2] = 0
-        feed_dict['rC_T_T'] = maps.interp(ls,cltt)(modlmap)
-    feed_dict['uC_T_T'] = theory.lCl('TT',modlmap)
-    feed_dict['tC_T_T'] = theory.lCl('TT',modlmap) + (noise*(np.pi/180./60.) / maps.gauss_beam(modlmap,beam))**2.
+        feed_dict['rC_T_T'] = get_spec(exp)
+    feed_dict['uC_T_T'] = get_spec('default')
+    feed_dict['tC_T_T'] = get_spec('default') + (noise*(np.pi/180./60.) / maps.gauss_beam(modlmap,beam))**2.
 
     # A_L
     Al2d = s.A_l_custom(shape,wcs,feed_dict,fresp,F,xmask=tmask,ymask=tmask,groups=None,kmask=kmask)
