@@ -13,7 +13,7 @@ shape,wcs = maps.rect_geometry(width_deg=20.,px_res_arcmin=1.5,proj='plain')
 theory = cosmology.default_theory()
 modlmap = enmap.modlmap(shape,wcs)
 
-hardening = 'src'
+#hardening = 'src'
 
 noise_level = 1.
 
@@ -175,6 +175,9 @@ for ii, XY in enumerate(XYs):
     np.savetxt('../output/nl_tau_%s_lmax%i.txt' % (XY, lmax), np.transpose([cents, N_L_tau_1d[XY], N_L_tau_phibh_1d[XY]]), 
                header = " ell, N_L_tau, N_L_tau_bh")
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> alex_dev

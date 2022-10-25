@@ -730,8 +730,9 @@ def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=N
     integral = integrate(shape,wcs,feed_dict,f*F/L/L,
                          xmask=xmask,ymask=ymask,groups=groups,
                          physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
-    # van Engelen commented out.  Had [0,0] element as np.inf in python2
-    # assert np.all(np.isfinite(integral))
+
+    modlmap = enmap.modlmap(shape,wcs)
+    assert np.all(np.isfinite(integral[modlmap>0]))
     kmask = 1 if kmask is None else kmask
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -1165,17 +1166,17 @@ def lensing_response_f(XY,rev=False,curl=False):
         raise ValueError
     return f
 
-def f2kernel_delta_symmetric_response_f(XY,rev=False):
+def f2kernel_delta_response_f(XY,rev=False):
     '''Equation @.4 of Foreman++ 1803.04975, with k_parallel = 0 
     '''
-    term1 =  5 / 7 * e('clfg_l1') \
-           + 5 / 7 * e('clfg_l2') 
+    term1 =  5 / 7 * e('fg_T_T_l1') \
+           + 5 / 7 * e('fg_T_T_l2') 
     
-    term2 = -1 / 2 * Ldl1 * (1/l1**2 + 1/L**2) * e('clfg_l1')  \
-            -1 / 2 * Ldl1 * (1/l2**2 + 1/L**2) * e('c2fg_l2')  
+    term2 = -1 / 2 * Ldl1 * (1/l1**2 + 1/L**2) * e('fg_T_T_l1')  \
+            -1 / 2 * Ldl2 * (1/l2**2 + 1/L**2) * e('fg_T_T_l2')  
     
-    term3 = 2 / 7 * Ldl1**2 / (L**2 * l1**2) * e('clfg_l1')  \
-           +2 / 7 * Ldl1**2 / (L**2 * l2**2) * e('clfg_l2') 
+    term3 = 2 / 7 * Ldl1**2 / (L**2 * l1**2) * e('fg_T_T_l1')  \
+           +2 / 7 * Ldl2**2 / (L**2 * l2**2) * e('fg_T_T_l2') 
     
     return term1 + term2 + term3
 
@@ -1403,6 +1404,21 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         F = f / t1(XY) / t2(XY) / 2
         fr = f
         Fr = F
+        
+    elif estimator=='f2-hardened':
+        """ f2 hardening!  Experimental.
+        """
+        assert XY=="TT", "BH only implemented for TT."
+        f_phi,F_phi,_ = get_mc_expressions(estimator_to_harden,XY,field_names=field_names)
+        f_f2,_,_ = get_mc_expressions('f2',XY,field_names=field_names)
+        A_f2_f2 = e('Af2_f2_L')
+        A_phi_f2 = e('Aphi_f2_L')
+        f = f_phi - A_f2_f2 / A_phi_f2 * f_f2
+        F = f / t1(XY) / t2(XY) / 2
+        fr = f
+        Fr = F
+        
+        
     elif estimator=='mask': # Namikawa et. al. mask bias hardening
         assert XY == "TT", "BH only implemented for TT."
         f = - t1('TT') - t2('TT')
@@ -1494,9 +1510,22 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
             F = (t1('EE')*t2('TT')*f - t1('TE')*t2('TE')*fr)/(t1('TT')*t2('EE')*t1('EE')*t2('TT'))
             Fr = (t2('EE')*t1('TT')*fr - t2('TE')*t1('TE')*f)/(t2('TT')*t1('EE')*t2('EE')*t1('TT'))
     
-    elif (estimator=='f2kernel'):
+    elif (estimator=='f2'):
         
-        f = f2kernel_reseponse_f(XY)
+        #this was for super simple testing!
+        #f = 1
+        #F = 1
+        
+        #THis is for mode counting - if the only variance in the maps were the CIB itself.
+        #F = f / e('fg_T_T_l1') / e('fg_T_T_l2') / 2
+
+        #This is what it should be!!
+
+        #
+        f = f2kernel_delta_response_f(XY,rev=False)
+        fr = f
+        F = f / t1(XY) / t2(XY) / 2
+        Fr = F
 
     else:
         raise ValueError("Estimator %s is not recognized" % estimator)
