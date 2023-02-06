@@ -29,17 +29,24 @@ def _get_groups(e1,e2=None,noise=True):
     else:
         return None
     
+
+        
+
 class HardenedTT(object):
-    def __init__(self,shape,wcs,feed_dict,xmask=None,ymask=None,kmask=None,Al=None,hardening='src',estimator='hu_ok'):
+    def __init__(self,shape,wcs,feed_dict,xmask=None,ymask=None,kmask=None,Al=None,hardening='src',estimator='hu_ok',
+                 target='phi'):
         h = hardening
-        f_bias,F_bias,_ = get_mc_expressions(hardening,'TT')
+        #van Engelen commented this out - strings starting with 'f' are "formatted string literals" and only work in python>=3.6, see https://docs.python.org/3/reference/lexical_analysis.html#f-strings
+        f_bias,F_bias,_ = get_mc_expressions('hu_ok' if hardening == 'phi' else hardening,'TT')
         f_phi,F_phi,_ = get_mc_expressions(estimator,'TT')
-        f_bh,F_bh,_ = get_mc_expressions(f'{h}-hardened','TT',estimator_to_harden=estimator)
+        # f_bh,F_bh,_ = get_mc_expressions(f'{h}-hardened','TT',estimator_to_harden=estimator)
+        f_bh,F_bh,_ = get_mc_expressions('%s-hardened' % h,'TT',estimator_to_harden=estimator)
+
         self.fdict = feed_dict
         # 1 / Response of the biasing agent to the biasing agent
-        self.fdict[f'A{h}_{h}_L'] = A_l_custom(shape,wcs,feed_dict,f_bias,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
-        # 1 / Response of the biasing agent to CMB lensing
-        self.fdict[f'Aphi_{h}_L'] = A_l_custom(shape,wcs,feed_dict,f_phi,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        self.fdict['A%s_%s_L' % (h, h)] = A_l_custom(shape,wcs,feed_dict,f_bias,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        # 1 / Response of the biasing agent to CMB lensing (or other target)
+        self.fdict['A%s_%s_L' % (target, h)] = A_l_custom(shape,wcs,feed_dict,f_phi,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
         self.Al = A_l_custom(shape,wcs,feed_dict,f_bh,F_bh,xmask=xmask,ymask=ymask,groups=None,kmask=kmask) if Al is None else Al
         self.F_bh = F_bh
         self.xmask = xmask
@@ -48,6 +55,41 @@ class HardenedTT(object):
         self.shape,self.wcs = shape,wcs
     def get_Nl(self):
         return N_l_cross_custom(self.shape,self.wcs,self.fdict,"TT","TT",self.F_bh,self.F_bh,self.F_bh,
+                                     xmask=self.xmask,ymask=self.ymask,
+                                     Aalpha=self.Al,Abeta=self.Al,groups=None,kmask=self.kmask)
+    def reconstruct(self,feed_dict,xname='X_l1',yname='Y_l2',groups=None,physical_units=True):
+        uqe = unnormalized_quadratic_estimator_custom(self.shape,self.wcs,feed_dict,
+                                                      self.F_bh,xname=xname,yname=yname,
+                                                      xmask=self.xmask,ymask=self.ymask,
+                                                      groups=groups,physical_units=physical_units)
+        return self.Al * uqe * self.kmask
+        
+        
+#This is for general bias hardening (not just TT).  Ideally the HardenedTT could be redefined (a subclass of this perhaps?)
+class HardenedXY(object):
+    def __init__(self,shape,wcs,feed_dict,xmask=None,ymask=None,kmask=None,Al=None,hardening='src',estimator='hu_ok',
+                 target='phi',XY='TT'):
+        h = hardening
+        #van Engelen commented this out - strings starting with 'f' are "formatted string literals" and only work in python>=3.6, see https://docs.python.org/3/reference/lexical_analysis.html#f-strings
+        f_bias,F_bias,_ = get_mc_expressions('hu_ok' if hardening == 'phi' else hardening,XY)
+        f_phi,F_phi,_ = get_mc_expressions(estimator,XY)
+        # f_bh,F_bh,_ = get_mc_expressions(f'{h}-hardened','TT',estimator_to_harden=estimator)
+        f_bh,F_bh,_ = get_mc_expressions('%s-hardened' % h,XY,estimator_to_harden=estimator)
+
+        self.fdict = feed_dict
+        # 1 / Response of the biasing agent to the biasing agent
+        self.fdict['A%s_%s_L' % (h, h)] = A_l_custom(shape,wcs,feed_dict,f_bias,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        # 1 / Response of the biasing agent to CMB lensing (or other target)
+        self.fdict['A%s_%s_L' % (target, h)] = A_l_custom(shape,wcs,feed_dict,f_phi,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
+        self.Al = A_l_custom(shape,wcs,feed_dict,f_bh,F_bh,xmask=xmask,ymask=ymask,groups=None,kmask=kmask) if Al is None else Al
+        self.F_bh = F_bh
+        self.xmask = xmask
+        self.ymask = ymask
+        self.kmask = kmask
+        self.shape,self.wcs = shape,wcs
+        self.XY = XY
+    def get_Nl(self):
+        return N_l_cross_custom(self.shape,self.wcs,self.fdict,self.XY,self.XY,self.F_bh,self.F_bh,self.F_bh,
                                      xmask=self.xmask,ymask=self.ymask,
                                      Aalpha=self.Al,Abeta=self.Al,groups=None,kmask=self.kmask)
     def reconstruct(self,feed_dict,xname='X_l1',yname='Y_l2',groups=None,physical_units=True):
@@ -341,9 +383,9 @@ def generic_cross_integral(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbe
     return integral
 
 def N_l_cross_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
-                      xmask=None,ymask=None,
-                      field_names_alpha=None,field_names_beta=None,
-                      falpha=None,fbeta=None,Aalpha=None,Abeta=None,
+                     xmask=None,ymask=None,
+                     field_names_alpha=None,field_names_beta=None,
+                     falpha=None,fbeta=None,Aalpha=None,Abeta=None,
                      groups=None,kmask=None,power_name="t"):
     """
     Returns the 2D cross-covariance between two custom mode-coupling estimators. 
@@ -688,6 +730,7 @@ def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=N
     integral = integrate(shape,wcs,feed_dict,f*F/L/L,
                          xmask=xmask,ymask=ymask,groups=groups,
                          physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
+
     modlmap = enmap.modlmap(shape,wcs)
     assert np.all(np.isfinite(integral[modlmap>0]))
     kmask = 1 if kmask is None else kmask
@@ -1165,6 +1208,65 @@ def rotation_response_f(XY,rev=False):
         raise ValueError
     return f
 
+    
+def mod_response_f(XY,rev=False):
+
+    """
+    Returns the mode-coupling response f(l1,l2) for CMB modulation.
+    Uses the positive sign convention of, e.g., Table II of Su++
+    0901.0285 -- this is the opposite of that of the mask case of Namikawa++ 1310.2372
+    (who define the mask with an extra minus sign).
+
+    This is the same as CMB lensing, defined above in
+    'lensing_response_f', but with the 'iLdl1' and 'iLdl2' factors set
+    to unity.
+
+    Note that for a tau reconstruction (Dvorkin & Smith) one needs the
+    negative of this.
+
+    Parameters
+    ----------
+
+    XY: str
+        The XY pair for the requested estimator. This must belong to one
+        of TT, EE, TE, ET, EB or TB.
+    rev: boolean, optional
+        Whether to swap l1 and l2. Defaults to False.
+
+    Returns
+    -------
+
+    f : :obj:`sympy.core.symbol.Symbol` , optional
+        A sympy expression containing the mode-coupling response. See the Usage guide
+        for details.
+
+    """
+    
+    # cLdl1 = Lxl1 if curl else Ldl1
+    # cLdl2 = Lxl2 if curl else Ldl2
+    
+    # iLdl1 = cLdl2 if rev else cLdl1
+    # iLdl2 = cLdl1 if rev else cLdl2
+    def iu1(ab): return u2(ab) if rev else u1(ab)
+    def iu2(ab): return u1(ab) if rev else u2(ab)
+    if XY=='TT':
+        f = iu1('TT')+iu2('TT')
+    elif XY=='TE':
+        f = cos2t12*iu1('TE')+iu2('TE')
+    elif XY=='ET':
+        f = iu2('TE')*cos2t12+iu1('TE')
+    elif XY=='TB':
+        f = iu1('TE')*sin2t12
+    elif XY=='EE':
+        f = (iu1('EE')+iu2('EE'))*cos2t12
+    elif XY=='EB':
+        f = iu1('EE')*sin2t12
+    else:
+        print(XY)
+        raise ValueError
+    return f
+
+
 def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'):
     """
     Pre-defined mode coupling expressions.
@@ -1268,6 +1370,7 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         F = f / t1(XY) / t2(XY) / 2
         fr = f
         Fr = F
+
     elif estimator=='src-hardened':
         """ Osborne et. al. point source hardening
         This gives you the MC expressions for the source
@@ -1289,11 +1392,19 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         fr = f
         Fr = F
     elif estimator=='mask': # Namikawa et. al. mask bias hardening
+        assert XY == "TT", "BH only implemented for TT."
         f = - t1('TT') - t2('TT')
         fr = f
         F = f / t1(XY) / t2(XY) / 2
         fr = f
         Fr = F
+    # elif estimator=='tau': # Patchy tau
+        # remnants from some earlier testing for the TT case  - AvE.  
+        # f = + u1('TT') + u2('TT')
+        # fr = f
+        # F = f / t1(XY) / t2(XY) / 2
+        # fr = f
+        # Fr = F
     elif estimator=='mask-hardened':
         """ Namikawa et. al. mask hardening
         This gives you the MC expressions for the mask
@@ -1312,10 +1423,33 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         F = f / t1(XY) / t2(XY) / 2
         fr = f
         Fr = F
-    elif estimator=='rot':  # Yadav et. al. 2009
-        f = rotation_response_f(XY,rev=False)
-        fr = rotation_response_f(XY,rev=True)
-        if XY in ['EE','BB']:
+    elif estimator=='phi-hardened':
+        #An estimator to harden lensing out of the mask estimator (as
+        #opposed to the converse in the 'mask-hardened' case above
+
+        # Seems to work for TT, trying this for polarization
+        # assert XY=="TT", "BH only implemented for TT."
+        assert (estimator_to_harden == 'mask' or estimator_to_harden == 'tau')
+        f_eth,F_eth,F_eth_r = get_mc_expressions(estimator_to_harden,XY,field_names=field_names)
+        f_phi,_,F_phi_r = get_mc_expressions('hu_ok',XY,field_names=field_names)
+        A_phi_phi = e('Aphi_phi_L')
+        A_eth_phi = e('A%s_phi_L' % estimator_to_harden)
+        f = f_eth - A_phi_phi / A_eth_phi * f_phi
+        # import pdb
+        # pdb.set_trace()
+        if X == Y:
+            fr = f
+        else:
+            fr = sympy.nan
+            print('warning, reversing l1 <-> l2 not implemented for bias hardening -- the reversed mode coupling function has been set to NaN')
+
+        # F = f / t1(XY) / t2(XY) / 2
+        # fr = f
+        # Fr = F
+        #AvE added this for non-TT bias hardening.
+        if XY in ['TT', 'EE','BB']: #note that XY=='TT' doesn't make
+                                    #sense for estimator=='rot', but
+                                    #this is included for the 'tau' case.
             F = f / 2 / t1(XY) / t2(XY)
             Fr = fr / 2 / t2(XY) / t1(XY)
         elif XY in ['TB','EB']:
@@ -1324,5 +1458,30 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         elif XY=='TE':
             F = (t1('EE')*t2('TT')*f - t1('TE')*t2('TE')*fr)/(t1('TT')*t2('EE')*t1('EE')*t2('TT'))
             Fr = (t2('EE')*t1('TT')*fr - t2('TE')*t1('TE')*f)/(t2('TT')*t1('EE')*t2('EE')*t1('TT'))
+
+    elif (estimator=='rot' or estimator == 'tau'):  
+        if estimator == 'rot': # Yadav et. al. 2009
+            f = rotation_response_f(XY,rev=False)
+            fr = rotation_response_f(XY,rev=True)
+        elif estimator == 'tau':
+            #the minus sign is here because the modulation response in mod_response_f is
+            #defined for a field "a" that acts like X_mod = (1 + a)X_primordial.  
+            # Tau (optical depth)has opposite sign 
+            f = -mod_response_f(XY,rev=False)
+            fr = -mod_response_f(XY,rev=True)
+
+        if XY in ['TT', 'EE','BB']: #note that XY=='TT' doesn't make
+                                    #sense for estimator=='rot', but
+                                    #this is included for the 'tau' case.
+            F = f / 2 / t1(XY) / t2(XY)
+            Fr = fr / 2 / t2(XY) / t1(XY)
+        elif XY in ['TB','EB']:
+            F = f / t1(XX) / t2(YY)
+            Fr = fr / t2(XX) / t1(YY)
+        elif XY=='TE':
+            F = (t1('EE')*t2('TT')*f - t1('TE')*t2('TE')*fr)/(t1('TT')*t2('EE')*t1('EE')*t2('TT'))
+            Fr = (t2('EE')*t1('TT')*fr - t2('TE')*t1('TE')*f)/(t2('TT')*t1('EE')*t2('EE')*t1('TT'))
+    else:
+        raise ValueError("Estimator %s is not recognized" % estimator)
 
     return f,F,Fr
