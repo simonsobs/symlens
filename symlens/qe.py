@@ -41,6 +41,7 @@ class HardenedTT(object):
         # 1 / Response of the biasing agent to CMB lensing
         self.fdict[f'Aphi_{h}_L'] = A_l_custom(shape,wcs,feed_dict,f_phi,F_bias,xmask=xmask,ymask=ymask,groups=None,kmask=kmask)
         self.Al = A_l_custom(shape,wcs,feed_dict,f_bh,F_bh,xmask=xmask,ymask=ymask,groups=None,kmask=kmask) if Al is None else Al
+
         self.F_bh = F_bh
         self.xmask = xmask
         self.ymask = ymask
@@ -55,7 +56,9 @@ class HardenedTT(object):
                                                       self.F_bh,xname=xname,yname=yname,
                                                       xmask=self.xmask,ymask=self.ymask,
                                                       groups=groups,physical_units=physical_units)
-        return self.Al * uqe * self.kmask
+        out = self.Al * uqe
+        out[self.kmask==0] = 0
+        return out
         
         
     
@@ -176,7 +179,9 @@ class QE(object):
                                                    xname=xname,yname=yname,
                                                    field_names=self.field_names,
                                                    xmask=self.xmask,ymask=self.ymask,physical_units=physical_units)
-        return self.Al * uqe * self.kmask
+        out = self.Al * uqe
+        out[self.kmask==0] = 0
+        return out
 
 def cross_integral_custom(shape,wcs,feed_dict,alpha_XY,beta_XY,Falpha,Fbeta,Fbeta_rev,
                            xmask=None,ymask=None,
@@ -688,6 +693,7 @@ def A_l_custom(shape,wcs,feed_dict,f,F,xmask=None,ymask=None,groups=None,kmask=N
     integral = integrate(shape,wcs,feed_dict,f*F/L/L,
                          xmask=xmask,ymask=ymask,groups=groups,
                          physical_units=False).real * enmap.pixsize(shape,wcs)**0.5 / (np.prod(shape[-2:])**0.5)
+
     modlmap = enmap.modlmap(shape,wcs)
     assert np.all(np.isfinite(integral[modlmap>0]))
     kmask = 1 if kmask is None else kmask
