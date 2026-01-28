@@ -1166,19 +1166,34 @@ def lensing_response_f(XY,rev=False,curl=False):
         raise ValueError
     return f
 
+def f2kernel_delta_response_growth_f(XY,rev=False):
+
+    term1 = 17 / 21. * e('fg_T_T_l1') \
+           +17 / 21. * e('fg_T_T_l2') 
+
+    return term1
+
+def f2kernel_delta_response_shift_f(XY,rev=False):
+#discrepancy in minus sign?  
+    term2 = 1 / 2 * Ldl1 * (1/l1**2 + 1/L**2) * e('fg_T_T_l1')  \
+           +1 / 2 * Ldl2 * (1/l2**2 + 1/L**2) * e('fg_T_T_l2')  
+    return term2
+
+
+def f2kernel_delta_response_tidal_f(XY,rev=False):
+    term3 = 2 / 7 * (Ldl1**2 / (L**2 * l1**2) - 1 / 3) * e('fg_T_T_l1')  \
+           +2 / 7 * (Ldl2**2 / (L**2 * l2**2) - 1 / 3) * e('fg_T_T_l2') 
+    return term3
+
 def f2kernel_delta_response_f(XY,rev=False):
     '''Equation @.4 of Foreman++ 1803.04975, with k_parallel = 0 
     '''
-    term1 =  5 / 7 * e('fg_T_T_l1') \
-           + 5 / 7 * e('fg_T_T_l2') 
-    
-    term2 = -1 / 2 * Ldl1 * (1/l1**2 + 1/L**2) * e('fg_T_T_l1')  \
-            -1 / 2 * Ldl2 * (1/l2**2 + 1/L**2) * e('fg_T_T_l2')  
-    
-    term3 = 2 / 7 * Ldl1**2 / (L**2 * l1**2) * e('fg_T_T_l1')  \
-           +2 / 7 * Ldl2**2 / (L**2 * l2**2) * e('fg_T_T_l2') 
-    
-    return term1 + term2 + term3
+
+    output = f2kernel_delta_response_growth_f(XY,rev=False) \
+             + f2kernel_delta_response_shift_f(XY,rev=False) \
+             + f2kernel_delta_response_tidal_f(XY,rev=False)
+
+    return output
 
 def rotation_response_f(XY,rev=False):
 
@@ -1405,19 +1420,21 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
         fr = f
         Fr = F
         
-    elif estimator=='f2-hardened':
+    elif estimator in ['f2-hardened', 'f2g-hardened', 'f2s-hardened', 'f2t-hardened']:
         """ f2 hardening!  Experimental.
         """
         assert XY=="TT", "BH only implemented for TT."
+        est = estimator.split('-')[0] #this could be f2, f2g, f2s, or f2t
         f_phi,F_phi,_ = get_mc_expressions(estimator_to_harden,XY,field_names=field_names)
-        f_f2,_,_ = get_mc_expressions('f2',XY,field_names=field_names)
-        A_f2_f2 = e('Af2_f2_L')
-        A_phi_f2 = e('Aphi_f2_L')
+        f_f2,_,_ = get_mc_expressions(est,XY,field_names=field_names)
+        A_f2_f2 = e('A%s_%s_L' % (est, est))
+        A_phi_f2 = e('Aphi_%s_L' % est)
         f = f_phi - A_f2_f2 / A_phi_f2 * f_f2
         F = f / t1(XY) / t2(XY) / 2
         fr = f
         Fr = F
-        
+
+
         
     elif estimator=='mask': # Namikawa et. al. mask bias hardening
         assert XY == "TT", "BH only implemented for TT."
@@ -1512,17 +1529,28 @@ def get_mc_expressions(estimator,XY,field_names=None,estimator_to_harden='hu_ok'
     
     elif (estimator=='f2'):
         
-        #this was for super simple testing!
-        #f = 1
-        #F = 1
-        
-        #THis is for mode counting - if the only variance in the maps were the CIB itself.
-        #F = f / e('fg_T_T_l1') / e('fg_T_T_l2') / 2
-
-        #This is what it should be!!
-
-        #
         f = f2kernel_delta_response_f(XY,rev=False)
+        fr = f
+        F = f / t1(XY) / t2(XY) / 2
+        Fr = F
+
+    elif (estimator=='f2g'):
+        
+        f = f2kernel_delta_response_growth_f(XY,rev=False)
+        fr = f
+        F = f / t1(XY) / t2(XY) / 2
+        Fr = F
+
+    elif (estimator=='f2s'):
+        
+        f = f2kernel_delta_response_shift_f(XY,rev=False)
+        fr = f
+        F = f / t1(XY) / t2(XY) / 2
+        Fr = F
+
+    elif (estimator=='f2t'):
+        
+        f = f2kernel_delta_response_tidal_f(XY,rev=False)
         fr = f
         F = f / t1(XY) / t2(XY) / 2
         Fr = F
